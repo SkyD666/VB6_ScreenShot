@@ -424,20 +424,20 @@ End Sub
 Private Sub cmbZoom_Click()
     On Error Resume Next
     Dim Boo As Boolean
-    Boo = frmPictureSaved(CLng(ActiveForm.labfrmi.Caption))                     '记录放大前是否保存
+    Boo = DocData(CLng(ActiveForm.labfrmi.Caption)).frmPictureSaved             '记录放大前是否保存
     If frmPicNum = -1 Then Exit Sub
     If ActiveForm.picScreenShot.Picture = 0 Then Exit Sub
     Dim X1 As Single, Y1 As Single
-    Set ActiveForm.picScreenShot.Picture = PictureData(CLng(ActiveForm.labfrmi.Caption))
+    Set ActiveForm.picScreenShot.Picture = DocData(CLng(ActiveForm.labfrmi.Caption)).PictureData
     X1 = Val(cmbZoom.List(cmbZoom.ListIndex)) * 0.01 * ActiveForm.picScreenShot.Width
     Y1 = Val(cmbZoom.List(cmbZoom.ListIndex)) * 0.01 * ActiveForm.picScreenShot.Height
     Me.ActiveForm.picScreenShot.Width = X1
     Me.ActiveForm.picScreenShot.Height = Y1
-    Me.ActiveForm.picScreenShot.PaintPicture PictureData(CLng(ActiveForm.labfrmi.Caption)) _
+    Me.ActiveForm.picScreenShot.PaintPicture DocData(CLng(ActiveForm.labfrmi.Caption)).PictureData _
     , 0, 0, X1, Y1
     Me.ActiveForm.cmdTransferVHScroll.Value = True
-    PicZoom(CInt(Me.ActiveForm.labfrmi.Caption)) = Val(cmbZoom.List(cmbZoom.ListIndex))
-    frmPictureSaved(CLng(ActiveForm.labfrmi.Caption)) = Boo                     '恢复放大前是否保存数据
+    DocData(CLng(ActiveForm.labfrmi.Caption)).PicZoom = Val(cmbZoom.List(cmbZoom.ListIndex))
+    DocData(CLng(ActiveForm.labfrmi.Caption)).frmPictureSaved = Boo             '恢复放大前是否保存数据
 End Sub
 
 Private Sub cmbZoom_Scroll()
@@ -524,9 +524,9 @@ Private Sub listSnapPic_Click()
     On Error Resume Next
     
     If SnapWhenTrayBoo = False Then
-        frmPictureCopy(listSnapPic.ListIndex).Caption = frmPictureName(listSnapPic.ListIndex)
-        If frmPictureCopy(listSnapPic.ListIndex).Visible = False Then frmPictureCopy(listSnapPic.ListIndex).Show
-        frmPictureCopy(listSnapPic.ListIndex).SetFocus
+        DocData(listSnapPic.ListIndex).frmPictureCopy.Caption = DocData(listSnapPic.ListIndex).frmPictureName
+        If DocData(listSnapPic.ListIndex).frmPictureCopy.Visible = False Then DocData(listSnapPic.ListIndex).frmPictureCopy.Show
+        DocData(listSnapPic.ListIndex).frmPictureCopy.SetFocus
     End If
 End Sub
 
@@ -838,7 +838,7 @@ Private Sub MDIForm_QueryUnload(Cancel As Integer, UnloadMode As Integer)
         
         '先把子窗体关闭，因为vb6默认的顺序是从0到n，这与此算法顺序刚好相反，因此需要先手动关闭子窗体，再触发主窗体的关闭事件
         For i = frmPicNum To 0 Step -1
-            Unload frmPictureCopy(i)
+            Unload DocData(i).frmPictureCopy
             If NewMsgBoxInt = -1 Then Cancel = 1: NewMsgBoxInt = 0: Exit For
             If NewMsgBoxInt = 4 Then NewMsgBoxInt = 0: Exit For                 '在子窗体里自己全关闭完了，不需要再循环
         Next
@@ -900,14 +900,10 @@ pos:
         listSnapPic.Selected(frmPicNum) = True                                  '在子窗体发生关闭时间前选中列表框最后一项，确保从最后一个文档依次关闭
         CloseAllFilesUnsavedBoo = True
         For i = frmPicNum To 0 Step -1
-            Unload frmPictureCopy(i)
+            Unload DocData(i).frmPictureCopy
         Next
         listSnapPic.Clear
-        Erase frmPictureCopy
-        Erase frmPictureSaved
-        Erase frmPictureName
-        Erase PictureData
-        Erase PicZoom
+        Erase DocData
         
         CloseAllFilesUnsavedBoo = False
     End If
@@ -935,32 +931,32 @@ End Sub
 Private Sub mnufrmPicCopy_Click()
     On Error Resume Next
     Clipboard.Clear
-    Clipboard.SetData PictureData(CLng(ActiveForm.labfrmi.Caption))
+    Clipboard.SetData DocData(CLng(ActiveForm.labfrmi.Caption)).PictureData
 End Sub
 
 Private Sub mnufrmPicPaste_Click()
     Dim SelectedInt As Long
     If frmPicNum = -1 Then Exit Sub
     If Clipboard.GetFormat(2) Or Clipboard.GetFormat(3) Or Clipboard.GetFormat(8) Then
-        If frmPictureSaved(CInt(Me.ActiveForm.labfrmi.Caption)) Then            '要在Clipboard.GetData()之前
-            frmPictureSaved(CInt(Me.ActiveForm.labfrmi.Caption)) = False
-            frmPictureName(CInt(Me.ActiveForm.labfrmi.Caption)) = frmPictureName(CInt(Me.ActiveForm.labfrmi.Caption)) & " *"
-            Me.ActiveForm.Caption = frmPictureName(CInt(Me.ActiveForm.labfrmi.Caption))
+        If DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureSaved Then    '要在Clipboard.GetData()之前
+            DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureSaved = False
+            DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureName = DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureName & " *"
+            Me.ActiveForm.Caption = DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureName
         End If
         
         Me.ActiveForm.picScreenShot.Picture = LoadPicture()
         Set Me.ActiveForm.picScreenShot.Picture = Clipboard.GetData()           '这里frmPictureSaved改变
         Me.ActiveForm.picScreenShot.Picture = Me.ActiveForm.picScreenShot.Image
-        Set PictureData(frmPicNum) = frmPictureCopy(frmPicNum).picScreenShot.Picture
+        Set DocData(frmPicNum).PictureData = DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture
         Me.ActiveForm.cmdTransferVHScroll.Value = True
         
         'listbox加“*”
-        listSnapPic.AddItem frmPictureName(CInt(Me.ActiveForm.labfrmi.Caption)), listSnapPic.ListIndex
+        listSnapPic.AddItem DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureName, listSnapPic.ListIndex
         SelectedInt = listSnapPic.ListIndex - 1
         listSnapPic.RemoveItem listSnapPic.ListIndex
         listSnapPic.Selected(SelectedInt) = True
         
-        PicZoom(CInt(Me.ActiveForm.labfrmi.Caption)) = 100
+        DocData(CInt(Me.ActiveForm.labfrmi.Caption)).PicZoom = 100
         cmbZoom.Text = "100%"
     End If
 End Sub
@@ -968,18 +964,14 @@ End Sub
 Public Sub mnuNew_Click()
     frmPicNum = frmPicNum + 1
     PicFilesCount = PicFilesCount + 1
-    ReDim Preserve frmPictureCopy(0 To frmPicNum) As New frmPicture
-    ReDim Preserve frmPictureSaved(0 To frmPicNum) As Boolean
-    ReDim Preserve PicZoom(0 To frmPicNum) As Integer
-    ReDim Preserve PictureData(0 To frmPicNum) As Picture
-    PicZoom(frmPicNum) = 100
-    frmPictureCopy(frmPicNum).Show
-    ReDim Preserve frmPictureName(0 To frmPicNum) As String                     '图片名称
-    frmPictureName(frmPicNum) = LoadResString(10705) & PicFilesCount
-    frmPictureCopy(frmPicNum).Caption = frmPictureName(frmPicNum)
-    Set PictureData(frmPicNum) = frmPictureCopy(frmPicNum).picScreenShot.Picture
+    ReDim Preserve DocData(0 To frmPicNum) As DocumentsData
+    DocData(frmPicNum).PicZoom = 100
+    DocData(frmPicNum).frmPictureCopy.Show
+    DocData(frmPicNum).frmPictureName = LoadResString(10705) & PicFilesCount
+    DocData(frmPicNum).frmPictureCopy.Caption = DocData(frmPicNum).frmPictureName
+    Set DocData(frmPicNum).PictureData = DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture
     
-    listSnapPic.AddItem frmPictureName(frmPicNum)
+    listSnapPic.AddItem DocData(frmPicNum).frmPictureName
     listSnapPic.Selected(frmPicNum) = True
     
     TrayTip Me, App.Title & " - " & LoadResString(10809) & frmPicNum + 1 & LoadResString(10810) '共   张截图
@@ -1064,28 +1056,23 @@ Private Sub timerHotKey_Timer()
         
         PicFilesCount = PicFilesCount + 1
         frmPicNum = frmPicNum + 1
-        ReDim Preserve PictureData(0 To frmPicNum) As Picture
+        ReDim Preserve DocData(0 To frmPicNum) As DocumentsData
         If ActiveWindowSnapMode = 0 Then                                        '不同的活动窗口截图方法 先截图，再创建文档，
-            Set PictureData(frmPicNum) = CaptureActiveWindow()                  '=原始方法
+            Set DocData(frmPicNum).PictureData = CaptureActiveWindow()          '=原始方法
         ElseIf ActiveWindowSnapMode = 1 Then
-            Set PictureData(frmPicNum) = CaptureActiveWindowB()                 '=新方法
+            Set DocData(frmPicNum).PictureData = CaptureActiveWindowB()         '=新方法
         End If
-        
-        ReDim Preserve frmPictureCopy(0 To frmPicNum) As New frmPicture
-        ReDim Preserve frmPictureSaved(0 To frmPicNum) As Boolean
-        ReDim Preserve PicZoom(0 To frmPicNum) As Integer
         'frmPictureSaved(frmPicNum) = False                                      '文档窗体内有设置
-        PicZoom(frmPicNum) = 100
-        ReDim Preserve frmPictureName(0 To frmPicNum) As String                 '图片名称
-        frmPictureName(frmPicNum) = LoadResString(10705) & PicFilesCount & " *"
-        frmPictureCopy(frmPicNum).Caption = frmPictureName(frmPicNum)
-        frmPictureCopy(frmPicNum).labfrmi.Caption = frmPicNum
-        Set frmPictureCopy(frmPicNum).picScreenShot.Picture = PictureData(frmPicNum)
-        Set frmPictureCopy(frmPicNum).picScreenShot.Picture = frmPictureCopy(frmPicNum).picScreenShot.Image
+        DocData(frmPicNum).PicZoom = 100
+        DocData(frmPicNum).frmPictureName = LoadResString(10705) & PicFilesCount & " *"
+        DocData(frmPicNum).frmPictureCopy.Caption = DocData(frmPicNum).frmPictureName
+        DocData(frmPicNum).frmPictureCopy.labfrmi.Caption = frmPicNum
+        Set DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture = DocData(frmPicNum).PictureData
+        Set DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture = DocData(frmPicNum).frmPictureCopy.picScreenShot.Image
         '——————————————————————画鼠标 在CaptureActiveWindow(B)内操作
-        Set PictureData(frmPicNum) = frmPictureCopy(frmPicNum).picScreenShot.Picture
+        Set DocData(frmPicNum).PictureData = DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture
         
-        If AutoSendToClipBoardBoo Then Clipboard.Clear: Clipboard.SetData PictureData(frmPicNum) '热键截图后直接将图片复制到剪贴板
+        If AutoSendToClipBoardBoo Then Clipboard.Clear: Clipboard.SetData DocData(frmPicNum).PictureData '热键截图后直接将图片复制到剪贴板
         
         If AutoSaveSnapInt(2) = 1 Then AutoSaveSnapSub 2, frmPicNum             '自动保存？
         

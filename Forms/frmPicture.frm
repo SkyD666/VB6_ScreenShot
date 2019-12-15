@@ -99,7 +99,7 @@ End Sub
 Private Sub Form_Activate()
     frmMain.labPicQuantity.Caption = Replace(LoadResString(10703), "0", CStr(frmPicNum + 1), , 1)
     frmMain.labPicQuantity.Caption = frmMain.labPicQuantity.Caption & Replace(LoadResString(10704), "0", CStr(CInt(labfrmi.Caption) + 1), , 1)
-    frmMain.cmbZoom.Text = PicZoom(CInt(Me.labfrmi.Caption)) & "%"
+    frmMain.cmbZoom.Text = DocData(CInt(Me.labfrmi.Caption)).PicZoom & "%"
     If (frmMain.listSnapPic.ListIndex <> CInt(labfrmi.Caption) And SnapWhenTrayBoo = False) Then frmMain.listSnapPic.Selected(CInt(labfrmi.Caption)) = True
     
     HookMouse Me                                                                'Êó±ê¹öÂÖHOOK
@@ -113,7 +113,7 @@ Private Sub Form_Load()
     If SnapWhenTrayBoo = False Then
         labfrmi.Caption = frmPicNum
     End If
-    frmPictureSaved(CInt(labfrmi.Caption)) = True
+    DocData(CInt(labfrmi.Caption)).frmPictureSaved = True
     '-----------------------¹ö¶¯Ìõ
     With HScroll1
         .Top = Picture1.Top + Picture1.Height
@@ -223,7 +223,7 @@ Private Sub picScreenShot_Change()
         End If
     End With
     
-    frmPictureSaved(CInt(labfrmi.Caption)) = False
+    DocData(CInt(labfrmi.Caption)).frmPictureSaved = False
 End Sub
 
 Private Sub VScroll1_Change()
@@ -235,7 +235,7 @@ Private Sub VScroll1_Scroll()
 End Sub
 
 Private Sub Form_Unload(Cancel As Integer)
-    If frmPictureSaved(CInt(labfrmi.Caption)) = False Then
+    If DocData(CInt(labfrmi.Caption)).frmPictureSaved = False Then
         If CloseAllFilesUnsavedBoo = True Then GoTo pos
         frmMsgBox.Show 1
         If NewMsgBoxInt = 1 Then

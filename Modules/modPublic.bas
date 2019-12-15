@@ -21,6 +21,14 @@ Declare Function GetPrivateProfileInt Lib "kernel32" Alias "GetPrivateProfileInt
 Public Declare Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, lParam As Any) As Long
 Public Const LB_ITEMFROMPOINT = &H1A9
 
+Public Type DocumentsData
+    PictureData As Picture                                                      '存储图片
+    frmPictureCopy As New frmPicture                                            '多开窗体
+    frmPictureSaved As Boolean                                                  '图片是否保存
+    frmPictureName As String                                                    '每个窗体内图片名称
+    PicZoom As Integer                                                          '缩放
+End Type
+
 Public SysMajor As Long, SysMinor As Long, SysBuild As Long                     '保存系统版本信息
 Public AutoSendToClipBoardBoo As Boolean                                        '热键截图后直接将图片复制到剪贴板
 Public AutoSaveSnapFormatStr As String                                          '自动保存图片格式
@@ -40,26 +48,22 @@ Public Declare Sub InitCommonControls Lib "comctl32.dll" ()                     
 Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 Public PicFilesCount As Long                                                    '文件计数，不减只加
 Public SnapWhenTrayLng As Long, SnapWhenTrayBoo As Boolean                      '托盘时截图数
-Public PictureData() As Picture                                                 '存储图片
-Public frmPictureCopy() As New frmPicture, frmPicNum As Integer, frmPictureSaved() As Boolean, frmPictureName() As String, PicZoom() As Integer
-'          多开窗体                                            窗体编号                      图片是否保存                           每个窗体内图片名称
+Public frmPicNum As Integer                                                     '窗体编号
+Public DocData() As DocumentsData
+
 Public Sub UnloadfrmPic(ByVal FrmNum As Integer)
     Dim i As Integer, n As Integer                                              '计数
     For i = FrmNum To frmPicNum - 1                                             '如关闭了2，共4个窗口，则3号变成2号，四号变成三号
-        Set frmPictureCopy(i) = frmPictureCopy(i + 1)
-        frmPictureCopy(i).labfrmi.Caption = i                                   '将更改后的序号传递给窗口
-        frmPictureSaved(i) = frmPictureSaved(i + 1)                             '是否保存图片 信息
-        PicZoom(i) = PicZoom(i + 1)                                             '是否保存图片 信息
-        Set PictureData(i) = PictureData(i + 1)
-        frmPictureName(i) = frmPictureName(i + 1)
+        Set DocData(i).frmPictureCopy = DocData(i + 1).frmPictureCopy
+        DocData(i).frmPictureCopy.labfrmi.Caption = i                           '将更改后的序号传递给窗口
+        DocData(i).frmPictureSaved = DocData(i + 1).frmPictureSaved             '是否保存图片 信息
+        DocData(i).PicZoom = DocData(i + 1).PicZoom                             '是否保存图片 信息
+        Set DocData(i).PictureData = DocData(i + 1).PictureData
+        DocData(i).frmPictureName = DocData(i + 1).frmPictureName
     Next
     frmPicNum = frmPicNum - 1
     If frmPicNum > -1 Then
-        ReDim Preserve frmPictureCopy(0 To frmPicNum) As New frmPicture
-        ReDim Preserve frmPictureSaved(0 To frmPicNum) As Boolean
-        ReDim Preserve PicZoom(0 To frmPicNum) As Integer
-        ReDim Preserve PictureData(0 To frmPicNum) As Picture
-        ReDim Preserve frmPictureName(0 To frmPicNum) As String
+        ReDim Preserve DocData(0 To frmPicNum) As DocumentsData
     End If
     n = frmMain.listSnapPic.ListIndex
     frmMain.listSnapPic.RemoveItem (n)                                          '先移除此条
@@ -101,28 +105,28 @@ nxt:
         Exit Sub
     Else
         If OptVal = 0 Then
-            frmPictureName(FrmNum) = Str
-            frmPictureCopy(FrmNum).Caption = frmPictureName(CInt(frmPictureCopy(FrmNum).labfrmi.Caption))
+            DocData(FrmNum).frmPictureName = Str
+            DocData(FrmNum).frmPictureCopy.Caption = DocData(CInt(DocData(FrmNum).frmPictureCopy.labfrmi.Caption)).frmPictureName
             If SnapWhenTrayBoo Then
                 '托盘截图自动保存时不需要在此处添加条目，在frmmain显示时会添加
             Else
-                frmMain.listSnapPic.AddItem frmPictureName(FrmNum), frmMain.listSnapPic.ListIndex
+                frmMain.listSnapPic.AddItem DocData(FrmNum).frmPictureName, frmMain.listSnapPic.ListIndex
                 SelectedInt = frmMain.listSnapPic.ListIndex - 1
                 frmMain.listSnapPic.RemoveItem frmMain.listSnapPic.ListIndex
                 frmMain.listSnapPic.Selected(SelectedInt) = True
             End If
-            frmPictureSaved(FrmNum) = True
+            DocData(FrmNum).frmPictureSaved = True
             
-            Call SaveStdPicToFile(PictureData(FrmNum), Str, Split(Str, ".")(UBound(Split(Str, "."))))
+            Call SaveStdPicToFile(DocData(FrmNum).PictureData, Str, Split(Str, ".")(UBound(Split(Str, "."))))
         ElseIf OptVal = 1 Then
             Dim i As Long, NewName As String
             For i = 0 To frmPicNum
                 Randomize                                                       '1000-99999随机数
                 ShowProgressBar Format((i + 1) / (frmPicNum + 1), "0.000")      '进度条
-                If frmPictureSaved(i) = False Then
+                If DocData(i).frmPictureSaved = False Then
                     NewName = Mid(Str, 1, InStrRev(Str, ".") - 1) & (i + 1) & "_" & (1000 + Int(Rnd * 98999)) & "." & Split(Str, ".")(UBound(Split(Str, ".")))
-                    Call SaveStdPicToFile(PictureData(i), NewName, Split(NewName, ".")(UBound(Split(NewName, "."))))
-                    frmPictureSaved(i) = True
+                    Call SaveStdPicToFile(DocData(i).PictureData, NewName, Split(NewName, ".")(UBound(Split(NewName, "."))))
+                    DocData(i).frmPictureSaved = True
                 End If
             Next i
         End If

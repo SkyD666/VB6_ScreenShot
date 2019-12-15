@@ -73,9 +73,9 @@ Public Sub SnapSub(ByVal Index As Integer)                                      
         Set frmMain.ActiveForm.picScreenShot.Picture = Pic
     Case 3
         '————————————————显示后赋值
-        frmPictureCopy(frmPicNum).picScreenShot.Width = GetSystemMetrics(SM_CXCURSOR) * Screen.TwipsPerPixelX 'GetSystemMetrics  API
-        frmPictureCopy(frmPicNum).picScreenShot.Height = GetSystemMetrics(SM_CYCURSOR) * Screen.TwipsPerPixelY
-        DrawIcon frmPictureCopy(frmPicNum).picScreenShot.hDC, 0, 0, pci.hCursor
+        DocData(frmPicNum).frmPictureCopy.picScreenShot.Width = GetSystemMetrics(SM_CXCURSOR) * Screen.TwipsPerPixelX 'GetSystemMetrics  API
+        DocData(frmPicNum).frmPictureCopy.picScreenShot.Height = GetSystemMetrics(SM_CYCURSOR) * Screen.TwipsPerPixelY
+        DrawIcon DocData(frmPicNum).frmPictureCopy.picScreenShot.hDC, 0, 0, pci.hCursor
         DeleteObject iconinf.hbmColor
         DeleteObject iconinf.hbmMask
     Case 4
@@ -83,24 +83,24 @@ Public Sub SnapSub(ByVal Index As Integer)                                      
     End Select
     '===========================================================================
     
-    frmPictureName(frmPicNum) = LoadResString(10705) & PicFilesCount & " *"
-    frmPictureCopy(frmPicNum).Caption = frmPictureName(frmPicNum)
+    DocData(frmPicNum).frmPictureName = LoadResString(10705) & PicFilesCount & " *"
+    DocData(frmPicNum).frmPictureCopy.Caption = DocData(frmPicNum).frmPictureName
     
     '——————————————————————画鼠标2  显示后赋值
     If (IncludeCursorBoo = True And Index <> 1) Or IncludeCursorBoo = 3 Then    '捕获光标时此bool为false   (Or IncludeCursorBoo = 3 此时为捕获光标，一定要截取光标)
-        DrawIcon frmPictureCopy(frmPicNum).picScreenShot.hDC, _
+        DrawIcon DocData(frmPicNum).frmPictureCopy.picScreenShot.hDC, _
         pci.ptScreenPos.X - iconinf.xHotspot, pci.ptScreenPos.Y - iconinf.yHotspot, pci.hCursor ''获取的位置先减去Hotspot得到鼠标左上角坐标
         DeleteObject iconinf.hbmColor
         DeleteObject iconinf.hbmMask
     End If
     '——————————————————————
-    Set frmPictureCopy(frmPicNum).picScreenShot.Picture = frmPictureCopy(frmPicNum).picScreenShot.Image
-    Set PictureData(frmPicNum) = frmPictureCopy(frmPicNum).picScreenShot.Picture
+    Set DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture = DocData(frmPicNum).frmPictureCopy.picScreenShot.Image
+    Set DocData(frmPicNum).PictureData = DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture
     
-    If Index = 2 Then If AutoSendToClipBoardBoo Then Clipboard.Clear: Clipboard.SetData PictureData(frmPicNum) '热键截图后直接将图片复制到剪贴板
+    If Index = 2 Then If AutoSendToClipBoardBoo Then Clipboard.Clear: Clipboard.SetData DocData(frmPicNum).PictureData '热键截图后直接将图片复制到剪贴板
     
     'listbox加“*”
-    frmMain.listSnapPic.AddItem frmPictureName(frmPicNum), frmMain.listSnapPic.ListIndex
+    frmMain.listSnapPic.AddItem DocData(frmPicNum).frmPictureName, frmMain.listSnapPic.ListIndex
     SelectedInt = frmMain.listSnapPic.ListIndex - 1
     frmMain.listSnapPic.RemoveItem frmMain.listSnapPic.ListIndex
     frmMain.listSnapPic.Selected(SelectedInt) = True

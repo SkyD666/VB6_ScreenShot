@@ -7,14 +7,14 @@ Public Const SM_CXCURSOR = 13                                                   
 Public Const SM_CYCURSOR = 14                                                   'Height of standard cursor
 '！！！！！！！！！！！！！！！！！！！！！！！！！！資函旺拝鮫報炎
 Public Declare Function DeleteObject Lib "gdi32" (ByVal hObject As Long) As Long
-Public Declare Function DrawIcon Lib "user32" (ByVal hDC As Long, ByVal x As Long, ByVal y As Long, ByVal hIcon As Long) As Long
+Public Declare Function DrawIcon Lib "user32" (ByVal hDC As Long, ByVal X As Long, ByVal Y As Long, ByVal hIcon As Long) As Long
 Public Declare Function GetCursor Lib "user32" () As Long
 Public Declare Function GetCursorPos Lib "user32" (lpPoint As POINTAPI) As Long
 Public Declare Function GetCursorInfo Lib "user32.dll" (ByRef pci As CURSORINFO) As Boolean
 Public Declare Function GetIconInfo Lib "user32" (ByVal hIcon As Long, piconinfo As ICONINFO) As Long
 Public Type POINTAPI
-    x As Long
-    y As Long
+    X As Long
+    Y As Long
 End Type
 Public Type ICONINFO
     fIcon As Boolean

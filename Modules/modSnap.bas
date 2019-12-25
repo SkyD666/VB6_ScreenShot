@@ -21,8 +21,8 @@ Public Sub SnapSub(ByVal Index As Integer)                                      
     
     Dim Pic As Picture                                                          '临时保存图片变量
     '——————————————————————画鼠标1  在窗体显示前（mnuNew_Click），先获取参数，显示后再赋值
-    If (IncludeCursorBoo = True And Index <> 1) Or Index = 3 Then               '(Or IncludeCursorBoo = 3 此时为捕获光标，一定要截取光标)
-        Dim pci As CURSORINFO, iconinf As ICONINFO                              '两个结构
+    Dim pci As CURSORINFO, iconinf As ICONINFO                                  '两个结构
+    If (IncludeCursorBoo = True And Index <> 1 And Index <> 2) Or Index = 3 Then '(Or IncludeCursorBoo = 3 此时为捕获光标，一定要截取光标)
         pci.cbSize = Len(pci)                                                   '初始
         GetCursorInfo pci
         GetIconInfo pci.hCursor, iconinf                                        '为了获取xHotspot
@@ -87,7 +87,7 @@ Public Sub SnapSub(ByVal Index As Integer)                                      
     DocData(frmPicNum).frmPictureCopy.Caption = DocData(frmPicNum).frmPictureName
     
     '——————————————————————画鼠标2  显示后赋值
-    If (IncludeCursorBoo = True And Index <> 1) Or IncludeCursorBoo = 3 Then    '捕获光标时此bool为false   (Or IncludeCursorBoo = 3 此时为捕获光标，一定要截取光标)
+    If (IncludeCursorBoo = True And Index <> 1 And Index <> 2) Or IncludeCursorBoo = 3 Then '捕获光标时此bool为false   (Or IncludeCursorBoo = 3 此时为捕获光标，一定要截取光标)
         DrawIcon DocData(frmPicNum).frmPictureCopy.picScreenShot.hDC, _
         pci.ptScreenPos.X - iconinf.xHotspot, pci.ptScreenPos.Y - iconinf.yHotspot, pci.hCursor ''获取的位置先减去Hotspot得到鼠标左上角坐标
         DeleteObject iconinf.hbmColor

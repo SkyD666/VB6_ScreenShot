@@ -99,7 +99,7 @@ End Sub
 Private Sub Form_Activate()
     frmMain.labPicQuantity.Caption = Replace(LoadResString(10703), "0", CStr(frmPicNum + 1), , 1)
     frmMain.labPicQuantity.Caption = frmMain.labPicQuantity.Caption & Replace(LoadResString(10704), "0", CStr(CInt(labfrmi.Caption) + 1), , 1)
-    frmMain.cmbZoom.Text = DocData(CInt(Me.labfrmi.Caption)).PicZoom & "%"
+    frmMain.cmbZoom.Text = DocData(CInt(labfrmi.Caption)).PicZoom & "%"
     If (frmMain.listSnapPic.ListIndex <> CInt(labfrmi.Caption) And SnapWhenTrayBoo = False) Then frmMain.listSnapPic.Selected(CInt(labfrmi.Caption)) = True
     
     HookMouse Me                                                                '鼠标滚轮HOOK
@@ -271,28 +271,28 @@ pos:
     'NewMsgBoxInt = 0                                                            '复原状态
 End Sub
 
-Private Sub picScreenShot_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
+Private Sub picScreenShot_MouseDown(Button As Integer, Shift As Integer, x As Single, y As Single)
     If Button = 2 Then
         PopupMenu frmMain.mnufrmPictureRight
     Else
         '鼠标在按钮上点击下去时执行(此时鼠标一直按着没提起来)
         Moving = True
-        X1 = X
-        Y1 = Y
+        X1 = x
+        Y1 = y
     End If
 End Sub
 
-Private Sub picScreenShot_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+Private Sub picScreenShot_MouseMove(Button As Integer, Shift As Integer, x As Single, y As Single)
     If Moving Then
-        picScreenShot.Left = picScreenShot.Left + X - X1
-        picScreenShot.Top = picScreenShot.Top + Y - Y1
+        picScreenShot.Left = picScreenShot.Left + x - X1
+        picScreenShot.Top = picScreenShot.Top + y - Y1
     End If
     
-    frmMain.labMousePos.Caption = Replace(LoadResString(10702), "X:0", "X:" & X / Screen.TwipsPerPixelX)
-    frmMain.labMousePos.Caption = Replace(frmMain.labMousePos.Caption, "Y:0", "Y:" & Y / Screen.TwipsPerPixelY)
+    frmMain.labMousePos.Caption = Replace(LoadResString(10702), "X:0", "X:" & x / Screen.TwipsPerPixelX)
+    frmMain.labMousePos.Caption = Replace(frmMain.labMousePos.Caption, "Y:0", "Y:" & y / Screen.TwipsPerPixelY)
 End Sub
 
-Private Sub picScreenShot_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
+Private Sub picScreenShot_MouseUp(Button As Integer, Shift As Integer, x As Single, y As Single)
     '鼠标在点击的情况下,放手时产生的事件
     Moving = False
 End Sub

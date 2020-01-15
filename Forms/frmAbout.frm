@@ -53,7 +53,7 @@ Begin VB.Form frmAbout
       Top             =   360
    End
    Begin VB.CheckBox chkMusic 
-      Caption         =   "&Music Toilet story 4 u"
+      Caption         =   "&Music Funky Stars 2:20"
       BeginProperty Font 
          Name            =   "ËÎÌו"
          Size            =   10.5
@@ -271,7 +271,7 @@ Private Sub Form_Load()
     
     Me.Icon = frmMain.Icon
     Me.Caption = LoadResString(11002) & " " & App.Title
-    lblVersion.Caption = LoadResString(11003) & ":" & App.Major & "." & App.Minor & "." & App.Revision & "." & "191225"
+    lblVersion.Caption = LoadResString(11003) & ":" & App.Major & "." & App.Minor & "." & App.Revision & "." & "2001??"
     lblTitle.Caption = App.Title
     
     Select Case CStr(SysMajor & "." & SysMinor)

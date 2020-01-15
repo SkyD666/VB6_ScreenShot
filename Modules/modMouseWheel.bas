@@ -32,31 +32,21 @@ Private Function WindowProc(ByVal hw As Long, ByVal uMsg As Long, ByVal wParam A
         'wKeys指出是否有CTRL=8、SHIFT=4、鼠标键(左=2、中=16、右=2、附加)按下，允许复合
         wKeys = LOWORD(wParam)
         '--------------------------------------------------
-        Dim MW_FB As Integer
-        MW_FB = (wParam And &HFFFF0000) \ &H10000
         Dim k As Integer
-        '        '——————————————frmeffect滚动条
-        '        If DiffereStr = "frmEffectVScroll" Then
-        '            If wKeys = 4 Then                                                   '按住Shift键滚动鼠标滚轮实现左右移动
-        '                k = (frmEffect.HScroll1.Value - Sgn(MW_FB) * frmEffect.HScroll1.LargeChange)
-        '                If k > frmEffect.HScroll1.Max Then k = frmEffect.HScroll1.Max
-        '                If k < frmEffect.HScroll1.Min Then k = frmEffect.HScroll1.Min
-        '                frmEffect.HScroll1.Value = k
-        '            Else
-        '                k = (frmEffect.VScroll1.Value - Sgn(MW_FB) * frmEffect.VScroll1.LargeChange)
-        '                If k > frmEffect.VScroll1.Max Then k = frmEffect.VScroll1.Max
-        '                If k < frmEffect.VScroll1.Min Then k = frmEffect.VScroll1.Min
-        '                frmEffect.VScroll1.Value = k
-        '            End If
-        '        End If
         '——————————————frmmain滚动条
         If wKeys = 4 Then                                                       '按住Shift键滚动鼠标滚轮实现左右移动
-            k = (frmName.HScroll1.Value - Sgn(MW_FB) * frmName.HScroll1.LargeChange)
+            k = (frmName.HScroll1.Value - Sgn(wzDelta) * frmName.HScroll1.LargeChange)
             If k > frmName.HScroll1.Max Then k = frmName.HScroll1.Max
             If k < frmName.HScroll1.Min Then k = frmName.HScroll1.Min
             frmName.HScroll1.Value = k
+        ElseIf wKeys = 8 Then                                                   'CTRL+滚轮缩放图片
+            If Sgn(wzDelta) = -1 And frmMain.cmbZoom.ListIndex > 0 Then
+                frmMain.cmbZoom.ListIndex = frmMain.cmbZoom.ListIndex - 1
+            ElseIf Sgn(wzDelta) = 1 And frmMain.cmbZoom.ListIndex < frmMain.cmbZoom.ListCount - 1 Then
+                frmMain.cmbZoom.ListIndex = frmMain.cmbZoom.ListIndex + 1
+            End If
         Else
-            k = (frmName.VScroll1.Value - Sgn(MW_FB) * frmName.VScroll1.LargeChange)
+            k = (frmName.VScroll1.Value - Sgn(wzDelta) * frmName.VScroll1.LargeChange)
             If k > frmName.VScroll1.Max Then k = frmName.VScroll1.Max
             If k < frmName.VScroll1.Min Then k = frmName.VScroll1.Min
             frmName.VScroll1.Value = k

@@ -1,7 +1,8 @@
 Attribute VB_Name = "modPublic"
 Option Explicit
+Public Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" (ByVal hwnd As Long, ByVal lpOperation As String, ByVal lpFile As String, ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
 Public Declare Function RtlGetNtVersionNumbers& Lib "ntdll" (Major As Long, Minor As Long, Optional Build As Long) '获取系统版本
-Public Declare Function SetWindowPos& Lib "user32" (ByVal hwnd As Long, ByVal hWndInsertAfter As Long, ByVal X As Long, ByVal Y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long)
+Public Declare Function SetWindowPos& Lib "user32" (ByVal hwnd As Long, ByVal hWndInsertAfter As Long, ByVal x As Long, ByVal y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long)
 Public Const SWP_NOMOVE = &H2                                                   '不更动目前视窗位置
 Public Const SWP_NOSIZE = &H1                                                   '不更动目前视窗大小
 Public Const HWND_TOPMOST = -1                                                  '设定为最上层
@@ -162,10 +163,8 @@ Public Sub AutoSaveSnapSub(ByVal Value As Single, ByVal Num As Long)            
     End Select
     Randomize
     FilesName = IDStr & " - " & Format(Now, "yyyy-MM-dd-hh-mm-ss") & (frmPicNum + 1) & "_" & Int(Rnd * 98999) + 1000 'Int(Rnd * n) + m,生成m到n的随机数其中,n,m为integer类型
-    
-    If Dir(AutoSaveSnapPathStr, vbDirectory) = "" Then                          '文件夹不存在
-        MkDir AutoSaveSnapPathStr                                               '在应用程序根目下，创建文件夹
-    End If
+    '文件夹不存在  '在应用程序根目下，创建文件夹
+    If Dir(AutoSaveSnapPathStr, vbDirectory) = "" Then MkDir AutoSaveSnapPathStr
     SaveFiles2 AutoSaveSnapPathStr & "\" & FilesName & Replace(AutoSaveSnapFormatStr, "*", ""), frmPicNum, 0
     
     'frmPictureSaved(Num) = True

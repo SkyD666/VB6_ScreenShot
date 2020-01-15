@@ -344,8 +344,23 @@ Begin VB.MDIForm frmMain
          Caption         =   "设置(&S)..."
       End
    End
+   Begin VB.Menu mnuView 
+      Caption         =   "查看(&V)"
+      Begin VB.Menu mnuZoom 
+         Caption         =   "缩放(&Z)"
+         Begin VB.Menu mnuZoomIn 
+            Caption         =   "放大(&I)"
+         End
+         Begin VB.Menu mnuZoomOut 
+            Caption         =   "缩小(&O)"
+         End
+      End
+   End
    Begin VB.Menu mnuHelp 
       Caption         =   "帮助(&H)"
+      Begin VB.Menu mnuSourceCode 
+         Caption         =   "开放源码(&S)..."
+      End
       Begin VB.Menu mnuAbout 
          Caption         =   "关于(&A)..."
       End
@@ -427,15 +442,21 @@ Private Sub cmbZoom_Click()
     Boo = DocData(CLng(ActiveForm.labfrmi.Caption)).frmPictureSaved             '记录放大前是否保存
     If frmPicNum = -1 Then Exit Sub
     If ActiveForm.picScreenShot.Picture = 0 Then Exit Sub
-    Dim X1 As Single, Y1 As Single
+    Dim X1 As Long, Y1 As Long, X0 As Integer, Y0 As Integer, OldStretchBltMode As Integer
     Set ActiveForm.picScreenShot.Picture = DocData(CLng(ActiveForm.labfrmi.Caption)).PictureData
+    X0 = ActiveForm.picScreenShot.Width / Screen.TwipsPerPixelX
+    Y0 = ActiveForm.picScreenShot.Height / Screen.TwipsPerPixelY
     X1 = Val(cmbZoom.List(cmbZoom.ListIndex)) * 0.01 * ActiveForm.picScreenShot.Width
     Y1 = Val(cmbZoom.List(cmbZoom.ListIndex)) * 0.01 * ActiveForm.picScreenShot.Height
-    Me.ActiveForm.picScreenShot.Width = X1
-    Me.ActiveForm.picScreenShot.Height = Y1
-    Me.ActiveForm.picScreenShot.PaintPicture DocData(CLng(ActiveForm.labfrmi.Caption)).PictureData _
+    ActiveForm.picScreenShot.Width = X1
+    ActiveForm.picScreenShot.Height = Y1
+    Set Picture1.Picture = DocData(CLng(ActiveForm.labfrmi.Caption)).PictureData
+    OldStretchBltMode = SetStretchBltMode(ActiveForm.picScreenShot.hDC, COLORONCOLOR) '设置新的模式
+    StretchBlt ActiveForm.picScreenShot.hDC, 0, 0, X1 / Screen.TwipsPerPixelX, Y1 / Screen.TwipsPerPixelY, Picture1.hDC, 0, 0, X0, Y0, vbSrcCopy
+    SetStretchBltMode ActiveForm.picScreenShot.hDC, OldStretchBltMode           '改回原来的模式
+    'ActiveForm.picScreenShot.PaintPicture DocData(CLng(ActiveForm.labfrmi.Caption)).PictureData _
     , 0, 0, X1, Y1
-    Me.ActiveForm.cmdTransferVHScroll.Value = True
+    ActiveForm.cmdTransferVHScroll.Value = True
     DocData(CLng(ActiveForm.labfrmi.Caption)).PicZoom = Val(cmbZoom.List(cmbZoom.ListIndex))
     DocData(CLng(ActiveForm.labfrmi.Caption)).frmPictureSaved = Boo             '恢复放大前是否保存数据
 End Sub
@@ -910,9 +931,7 @@ pos:
 End Sub
 
 Private Sub mnuCopy_Click()
-    On Error Resume Next
-    Clipboard.Clear
-    Clipboard.SetData Me.ActiveForm.picScreenShot.Picture
+    mnufrmPicCopy_Click
 End Sub
 
 Private Sub mnuCursorSnap_Click()
@@ -931,32 +950,32 @@ End Sub
 Private Sub mnufrmPicCopy_Click()
     On Error Resume Next
     Clipboard.Clear
-    Clipboard.SetData DocData(CLng(ActiveForm.labfrmi.Caption)).PictureData
+    Clipboard.SetData DocData(listSnapPic.ListIndex).PictureData
 End Sub
 
 Private Sub mnufrmPicPaste_Click()
     Dim SelectedInt As Long
-    If frmPicNum = -1 Then Exit Sub
+    If frmPicNum = -1 Or listSnapPic.ListIndex < 0 Then Exit Sub
     If Clipboard.GetFormat(2) Or Clipboard.GetFormat(3) Or Clipboard.GetFormat(8) Then
-        If DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureSaved Then    '要在Clipboard.GetData()之前
-            DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureSaved = False
-            DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureName = DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureName & " *"
-            Me.ActiveForm.Caption = DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureName
+        If DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureSaved Then       '要在Clipboard.GetData()之前
+            DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureSaved = False
+            DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureName = DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureName & " *"
+            ActiveForm.Caption = DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureName
         End If
         
-        Me.ActiveForm.picScreenShot.Picture = LoadPicture()
+        ActiveForm.picScreenShot.Picture = LoadPicture()
         Set Me.ActiveForm.picScreenShot.Picture = Clipboard.GetData()           '这里frmPictureSaved改变
-        Me.ActiveForm.picScreenShot.Picture = Me.ActiveForm.picScreenShot.Image
+        ActiveForm.picScreenShot.Picture = ActiveForm.picScreenShot.Image
         Set DocData(frmPicNum).PictureData = DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture
-        Me.ActiveForm.cmdTransferVHScroll.Value = True
+        ActiveForm.cmdTransferVHScroll.Value = True
         
         'listbox加“*”
-        listSnapPic.AddItem DocData(CInt(Me.ActiveForm.labfrmi.Caption)).frmPictureName, listSnapPic.ListIndex
+        listSnapPic.AddItem DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureName, listSnapPic.ListIndex
         SelectedInt = listSnapPic.ListIndex - 1
         listSnapPic.RemoveItem listSnapPic.ListIndex
         listSnapPic.Selected(SelectedInt) = True
         
-        DocData(CInt(Me.ActiveForm.labfrmi.Caption)).PicZoom = 100
+        DocData(CInt(ActiveForm.labfrmi.Caption)).PicZoom = 100
         cmbZoom.Text = "100%"
     End If
 End Sub
@@ -990,8 +1009,8 @@ End Sub
 Private Sub mnuSave_Click()
     If frmPicNum = -1 Then Exit Sub                                             '没有图片
     Dim Str As String
-    Str = SaveFiles(Me, CLng(Me.ActiveForm.labfrmi.Caption))
-    SaveFiles2 Str, CLng(Me.ActiveForm.labfrmi.Caption)
+    Str = SaveFiles(Me, CLng(ActiveForm.labfrmi.Caption))
+    SaveFiles2 Str, CLng(ActiveForm.labfrmi.Caption)
 End Sub
 
 Private Sub mnuScreenSnap_Click()
@@ -1000,6 +1019,10 @@ End Sub
 
 Private Sub mnuSetting_Click()
     frmSettings.Show 1
+End Sub
+
+Private Sub mnuSourceCode_Click()
+    ShellExecute Me.hwnd, "open", "https://github.com/SkyD666/VB6_ScreenShot", "", "", 1
 End Sub
 
 Private Sub mnuTrayAbout_Click()
@@ -1041,6 +1064,14 @@ End Sub
 
 Private Sub mnuTrayWinCtrlSnap_Click()
     imgAnyCtrlWindow_Click
+End Sub
+
+Private Sub mnuZoomIn_Click()
+    If cmbZoom.ListIndex < frmMain.cmbZoom.ListCount - 1 Then cmbZoom.ListIndex = cmbZoom.ListIndex + 1
+End Sub
+
+Private Sub mnuZoomOut_Click()
+    If cmbZoom.ListIndex > 0 Then cmbZoom.ListIndex = cmbZoom.ListIndex - 1
 End Sub
 
 Private Sub timerHotKey_Timer()

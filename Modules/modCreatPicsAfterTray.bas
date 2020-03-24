@@ -5,7 +5,7 @@ Public Sub CreatPicsAfterTraySub()
     Dim CPAT As Long
     
     For CPAT = (frmPicNum - SnapWhenTrayLng + 1) To frmPicNum
-        frmMain.listSnapPic.AddItem DocData(CPAT).frmPictureName
+        frmMain.listSnapPic.AddItem PictureForms.Item(1 + CPAT).PictureName
         'frmMain.listSnapPic.Selected(CPAT) = True
     Next CPAT
     

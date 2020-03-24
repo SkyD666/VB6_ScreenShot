@@ -441,7 +441,7 @@ Private Sub chkAutoRun_Click()
     On Error GoTo Err:
     If chkAutoRun.Value = 1 Then
         Set w = CreateObject("wscript.shell")
-        w.RegWrite "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\ScreenSnap", App.path & "\" & "ScreenSnap" & ".exe AUTORUN", "REG_SZ"
+        w.RegWrite "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\ScreenSnap", Chr(34) & App.path & "\" & "ScreenSnap" & ".exe" & Chr(34) & " AUTORUN", "REG_SZ"
         Set w = Nothing
     Else
         Set w = CreateObject("wscript.shell")
@@ -523,8 +523,6 @@ End Sub
 Private Sub cmbChooseSoundPlay_Click()
     If frmLoadSoundPlayCmbBoo = False Then
         Select Case cmbChooseSoundPlay.List(cmbChooseSoundPlay.ListIndex)
-            '        Case LoadResString(11601)
-            '            ChooseSoundPlayStr = "MOREN"
         Case LoadResString(11602)
             ChooseSoundPlayStr = "XIANGJI"
         Case LoadResString(11603)
@@ -593,7 +591,6 @@ Private Sub Form_Load()
     cmbAutoSaveSnapFormat.AddItem "*.png"
     cmbAutoSaveSnapFormat.AddItem "*.gif"
     
-    '    cmbChooseSoundPlay.AddItem LoadResString(11601)                             'Ä¬ÈÏ
     cmbChooseSoundPlay.AddItem LoadResString(11602)                             'Ïà»ú
     cmbChooseSoundPlay.AddItem LoadResString(11603)                             '·çÁå
     cmbChooseSoundPlay.AddItem LoadResString(11604)                             'µç»÷
@@ -646,9 +643,6 @@ Private Sub Form_Load()
     
     
     Select Case ChooseSoundPlayStr
-        '    Case "MOREN"
-        '        frmLoadSoundPlayCmbBoo = True
-        '        cmbChooseSoundPlay.Text = LoadResString(11601)
     Case "XIANGJI"
         frmLoadSoundPlayCmbBoo = True
         cmbChooseSoundPlay.Text = LoadResString(11602)
@@ -706,7 +700,6 @@ Private Sub Form_Unload(Cancel As Integer)
     WritePrivateProfileString "Save", "AutoSaveSnapWindowCtrl", CStr(AutoSaveSnapInt(4)), App.path & "\ScreenSnapConfig.ini"
     WritePrivateProfileString "Config", "HideWinCaptureFullScreen", CStr(HideWinCaptureInt(0)), App.path & "\ScreenSnapConfig.ini"
     WritePrivateProfileString "Config", "HideWinCaptureActiveWindow", CStr(HideWinCaptureInt(1)), App.path & "\ScreenSnapConfig.ini"
-    'WritePrivateProfileString "Config", "HideWinCaptureHotKey", CStr(HideWinCaptureInt(2)), App.path & "\ScreenSnapConfig.ini"
     WritePrivateProfileString "Config", "HideWinCaptureCursor", CStr(HideWinCaptureInt(3)), App.path & "\ScreenSnapConfig.ini"
     WritePrivateProfileString "Config", "HideWinCaptureWindowCtrl", CStr(HideWinCaptureInt(4)), App.path & "\ScreenSnapConfig.ini"
     WritePrivateProfileString "Picture", "AutoSaveSnapPath", AutoSaveSnapPathStr, App.path & "\ScreenSnapConfig.ini"
@@ -716,7 +709,7 @@ Private Sub Form_Unload(Cancel As Integer)
     WritePrivateProfileString "HotKey", "DeclareHotKeyWay", CStr(DeclareHotKeyWayInt), App.path & "\ScreenSnapConfig.ini"
     Exit Sub
 Err:
-    MsgBox "´íÎó£¡" & vbCrLf & "´íÎó´úÂë£º" & Err.Number & vbCrLf & "´íÎóÃèÊö£º" & Err.Description, vbCritical + vbOKOnly
+    MsgBox "´íÎó£¡frmSetting.Form_Unload" & vbCrLf & "´íÎó´úÂë£º" & Err.Number & vbCrLf & "´íÎóÃèÊö£º" & Err.Description, vbCritical + vbOKOnly
     Cancel = 1
 End Sub
 

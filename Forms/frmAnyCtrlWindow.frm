@@ -65,7 +65,7 @@ Private Sub imgGetPosition_MouseUp(Button As Integer, Shift As Integer, X As Sin
     imgGetPosition.Enabled = True
     Exit Sub
 Err1:
-    MsgBox "´íÎó£¡" & vbCrLf & "´íÎó´úÂë£º" & Err.Number & vbCrLf & "´íÎóÃèÊö£º" & Err.Description, vbCritical + vbOKOnly
+    MsgBox "´íÎó£¡imgGetPosition_MouseUp" & vbCrLf & "´íÎó´úÂë£º" & Err.Number & vbCrLf & "´íÎóÃèÊö£º" & Err.Description, vbCritical + vbOKOnly
 End Sub
 
 Private Sub Timer1_Timer()

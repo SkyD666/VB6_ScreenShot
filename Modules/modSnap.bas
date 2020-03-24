@@ -2,8 +2,8 @@ Attribute VB_Name = "modSnap"
 Option Explicit
 
 Public Sub SnapSub(ByVal Index As Integer)                                      '标志截图类型 0,1,2,3,4全屏，活动窗口，热键，光标，任意窗口控件
-    On Error GoTo ErrSnapSub
-    Dim frmMainVis As Boolean, SelectedInt As Integer
+    'On Error GoTo ErrSnapSub
+    Dim frmMainVis As Boolean
     
     If Index = 1 Then
         If MsgBox(LoadResString(10804) & DelayTimeInt(1) & LoadResString(10805), vbInformation + vbOKCancel) <> vbOK Then Exit Sub '提示对话框
@@ -73,9 +73,9 @@ Public Sub SnapSub(ByVal Index As Integer)                                      
         Set frmMain.ActiveForm.picScreenShot.Picture = Pic
     Case 3
         '————————————————显示后赋值
-        DocData(frmPicNum).frmPictureCopy.picScreenShot.Width = GetSystemMetrics(SM_CXCURSOR) * Screen.TwipsPerPixelX 'GetSystemMetrics  API
-        DocData(frmPicNum).frmPictureCopy.picScreenShot.Height = GetSystemMetrics(SM_CYCURSOR) * Screen.TwipsPerPixelY
-        DrawIcon DocData(frmPicNum).frmPictureCopy.picScreenShot.hDC, 0, 0, pci.hCursor
+        frmMain.ActiveForm.picScreenShot.Width = GetSystemMetrics(SM_CXCURSOR) * Screen.TwipsPerPixelX 'GetSystemMetrics  API
+        frmMain.ActiveForm.picScreenShot.Height = GetSystemMetrics(SM_CYCURSOR) * Screen.TwipsPerPixelY
+        DrawIcon frmMain.ActiveForm.picScreenShot.hDC, 0, 0, pci.hCursor
         DeleteObject iconinf.hbmColor
         DeleteObject iconinf.hbmMask
     Case 4
@@ -83,27 +83,24 @@ Public Sub SnapSub(ByVal Index As Integer)                                      
     End Select
     '===========================================================================
     
-    DocData(frmPicNum).frmPictureName = LoadResString(10705) & PicFilesCount & " *"
-    DocData(frmPicNum).frmPictureCopy.Caption = DocData(frmPicNum).frmPictureName
+    frmMain.ActiveForm.PictureName = LoadResString(10705) & PicFilesCount & " *"
+    frmMain.ActiveForm.Caption = frmMain.ActiveForm.PictureName
     
     '——————————————————————画鼠标2  显示后赋值
     If (IncludeCursorBoo = True And Index <> 1 And Index <> 2) Or IncludeCursorBoo = 3 Then '捕获光标时此bool为false   (Or IncludeCursorBoo = 3 此时为捕获光标，一定要截取光标)
-        DrawIcon DocData(frmPicNum).frmPictureCopy.picScreenShot.hDC, _
+        DrawIcon frmMain.ActiveForm.picScreenShot.hDC, _
         pci.ptScreenPos.X - iconinf.xHotspot, pci.ptScreenPos.Y - iconinf.yHotspot, pci.hCursor ''获取的位置先减去Hotspot得到鼠标左上角坐标
         DeleteObject iconinf.hbmColor
         DeleteObject iconinf.hbmMask
     End If
     '——————————————————————
-    Set DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture = DocData(frmPicNum).frmPictureCopy.picScreenShot.Image
-    Set DocData(frmPicNum).PictureData = DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture
+    Set frmMain.ActiveForm.picScreenShot.Picture = frmMain.ActiveForm.picScreenShot.Image
+    Set frmMain.ActiveForm.PictureData = frmMain.ActiveForm.picScreenShot.Picture
     
-    If Index = 2 Then If AutoSendToClipBoardBoo Then Clipboard.Clear: Clipboard.SetData DocData(frmPicNum).PictureData '热键截图后直接将图片复制到剪贴板
+    If Index = 2 Then If AutoSendToClipBoardBoo Then Clipboard.Clear: Clipboard.SetData frmMain.ActiveForm.PictureData '热键截图后直接将图片复制到剪贴板
     
     'listbox加“*”
-    frmMain.listSnapPic.AddItem DocData(frmPicNum).frmPictureName, frmMain.listSnapPic.ListIndex
-    SelectedInt = frmMain.listSnapPic.ListIndex - 1
-    frmMain.listSnapPic.RemoveItem frmMain.listSnapPic.ListIndex
-    frmMain.listSnapPic.Selected(SelectedInt) = True
+    frmMain.listSnapPic.List(frmMain.listSnapPic.ListIndex) = frmMain.ActiveForm.PictureName
     
     If AutoSaveSnapInt(Index) = 1 Then AutoSaveSnapSub Index, frmPicNum
     
@@ -113,5 +110,5 @@ Public Sub SnapSub(ByVal Index As Integer)                                      
     
     Exit Sub
 ErrSnapSub:
-    MsgBox "错误！" & vbCrLf & "错误代码：" & Err.Number & vbCrLf & "错误描述：" & Err.Description, vbCritical + vbOKOnly
+    MsgBox "错误！Snap" & vbCrLf & "错误代码：" & Err.Number & vbCrLf & "错误描述：" & Err.Description, vbCritical + vbOKOnly
 End Sub

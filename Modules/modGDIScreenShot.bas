@@ -3,23 +3,23 @@ Option Explicit
 
 '声明API函数
 Public Declare Function WindowFromPoint Lib "user32" (ByVal xPoint As Long, ByVal yPoint As Long) As Long
-Public Declare Function StretchBlt Lib "gdi32" (ByVal hdc As Long, ByVal x As Long, ByVal y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hSrcDC As Long, ByVal xSrc As Long, ByVal ySrc As Long, ByVal nSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long
-Public Declare Function SetStretchBltMode Lib "gdi32" (ByVal hdc As Long, ByVal nStretchMode As Long) As Long
-Public Declare Function CreateCompatibleDC Lib "gdi32" (ByVal hdc As Long) As Long
-Public Declare Function CreateCompatibleBitmap Lib "gdi32" (ByVal hdc As Long, ByVal nWidth As Long, ByVal nHeight As Long) As Long
-Public Declare Function GetDeviceCaps Lib "gdi32" (ByVal hdc As Long, ByVal iCapabilitiy As Long) As Long
-Public Declare Function GetSystemPaletteEntries Lib "gdi32" (ByVal hdc As Long, ByVal wStartIndex As Long, ByVal wNumEntries As Long, lpPaletteEntries As PALETTEENTRY) As Long
+Public Declare Function StretchBlt Lib "gdi32" (ByVal hDC As Long, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hSrcDC As Long, ByVal xSrc As Long, ByVal ySrc As Long, ByVal nSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long
+Public Declare Function SetStretchBltMode Lib "gdi32" (ByVal hDC As Long, ByVal nStretchMode As Long) As Long
+Public Declare Function CreateCompatibleDC Lib "gdi32" (ByVal hDC As Long) As Long
+Public Declare Function CreateCompatibleBitmap Lib "gdi32" (ByVal hDC As Long, ByVal nWidth As Long, ByVal nHeight As Long) As Long
+Public Declare Function GetDeviceCaps Lib "gdi32" (ByVal hDC As Long, ByVal iCapabilitiy As Long) As Long
+Public Declare Function GetSystemPaletteEntries Lib "gdi32" (ByVal hDC As Long, ByVal wStartIndex As Long, ByVal wNumEntries As Long, lpPaletteEntries As PALETTEENTRY) As Long
 Public Declare Function CreatePalette Lib "gdi32" (lpLogPalette As LOGPALETTE) As Long
-Public Declare Function SelectObject Lib "gdi32" (ByVal hdc As Long, ByVal hObject As Long) As Long
+Public Declare Function SelectObject Lib "gdi32" (ByVal hDC As Long, ByVal hObject As Long) As Long
 Public Declare Function BitBlt Lib "gdi32" (ByVal hdcDest As Long, ByVal XDest As Long, ByVal YDest As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hdcSrc As Long, ByVal xSrc As Long, ByVal ySrc As Long, ByVal dwRop As Long) As Long
-Public Declare Function DeleteDC Lib "gdi32" (ByVal hdc As Long) As Long
+Public Declare Function DeleteDC Lib "gdi32" (ByVal hDC As Long) As Long
 Public Declare Function GetForegroundWindow Lib "user32" () As Long
-Public Declare Function SelectPalette Lib "gdi32" (ByVal hdc As Long, ByVal hPalette As Long, ByVal bForceBackground As Long) As Long
-Public Declare Function RealizePalette Lib "gdi32" (ByVal hdc As Long) As Long
+Public Declare Function SelectPalette Lib "gdi32" (ByVal hDC As Long, ByVal hPalette As Long, ByVal bForceBackground As Long) As Long
+Public Declare Function RealizePalette Lib "gdi32" (ByVal hDC As Long) As Long
 Public Declare Function GetWindowDC Lib "user32" (ByVal hwnd As Long) As Long
 Public Declare Function GetDC Lib "user32" (ByVal hwnd As Long) As Long
 Public Declare Function GetWindowRect Lib "user32" (ByVal hwnd As Long, lpRect As Rect) As Long
-Public Declare Function ReleaseDC Lib "user32" (ByVal hwnd As Long, ByVal hdc As Long) As Long
+Public Declare Function ReleaseDC Lib "user32" (ByVal hwnd As Long, ByVal hDC As Long) As Long
 Public Declare Function GetDesktopWindow Lib "user32" () As Long
 Public Declare Function OleCreatePictureIndirect Lib "olepro32.dll" (PicDesc As PicBmp, RefIID As Guid, ByVal fPictureOwnsHandle As Long, IPic As IPicture) As Long
 
@@ -98,8 +98,8 @@ Public Function CaptureActiveWindowB() As Picture                               
         pci.cbSize = Len(pci)                                                   '初始
         GetCursorInfo pci
         GetIconInfo pci.hCursor, iconinf                                        '为了获取xHotspot
-        DrawIcon frmMain.Picture1.hdc, pci.ptScreenPos.x - iconinf.xHotspot - (RectActive.Left / Screen.TwipsPerPixelY), _
-        pci.ptScreenPos.y - iconinf.yHotspot - (RectActive.Top / Screen.TwipsPerPixelY), pci.hCursor '获取的位置先减去Hotspot得到鼠标左上角坐标，再减去活动窗口左上角
+        DrawIcon frmMain.Picture1.hDC, pci.ptScreenPos.X - iconinf.xHotspot - (RectActive.Left / Screen.TwipsPerPixelY), _
+        pci.ptScreenPos.Y - iconinf.yHotspot - (RectActive.Top / Screen.TwipsPerPixelY), pci.hCursor '获取的位置先减去Hotspot得到鼠标左上角坐标，再减去活动窗口左上角
     End If
     '——————————————————————
     Set frmMain.Picture1.Picture = frmMain.Picture1.Image
@@ -119,8 +119,8 @@ Public Function CaptureActiveWindow() As Picture                                
         pci.cbSize = Len(pci)                                                   '初始
         GetCursorInfo pci
         GetIconInfo pci.hCursor, iconinf                                        '为了获取xHotspot
-        DrawIcon frmMain.Picture1.hdc, pci.ptScreenPos.x - iconinf.xHotspot - (RectActive.Left / Screen.TwipsPerPixelY), _
-        pci.ptScreenPos.y - iconinf.yHotspot - (RectActive.Top / Screen.TwipsPerPixelY), pci.hCursor '获取的位置先减去Hotspot得到鼠标左上角坐标，再减去活动窗口左上角
+        DrawIcon frmMain.Picture1.hDC, pci.ptScreenPos.X - iconinf.xHotspot - (RectActive.Left / Screen.TwipsPerPixelY), _
+        pci.ptScreenPos.Y - iconinf.yHotspot - (RectActive.Top / Screen.TwipsPerPixelY), pci.hCursor '获取的位置先减去Hotspot得到鼠标左上角坐标，再减去活动窗口左上角
     End If
     '——————————————————————
     Set CaptureActiveWindow = frmMain.Picture1.Image
@@ -172,7 +172,7 @@ Public Function CaptureWindow(ByVal hWndSrc As Long, ByVal Client As Boolean, By
     
     Exit Function
 Err7:
-    MsgBox "错误！" & vbCrLf & "错误代码：" & Err.Number & vbCrLf & "错误描述：" & Err.Description, vbCritical + vbOKOnly
+    MsgBox "错误！CaptureWindow" & vbCrLf & "错误代码：" & Err.Number & vbCrLf & "错误描述：" & Err.Description, vbCritical + vbOKOnly
 End Function
 
 '抓取整个屏幕的函数

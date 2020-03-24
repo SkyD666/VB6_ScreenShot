@@ -2,7 +2,7 @@ Attribute VB_Name = "modPublic"
 Option Explicit
 Public Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" (ByVal hwnd As Long, ByVal lpOperation As String, ByVal lpFile As String, ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
 Public Declare Function RtlGetNtVersionNumbers& Lib "ntdll" (Major As Long, Minor As Long, Optional Build As Long) '获取系统版本
-Public Declare Function SetWindowPos& Lib "user32" (ByVal hwnd As Long, ByVal hWndInsertAfter As Long, ByVal x As Long, ByVal y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long)
+Public Declare Function SetWindowPos& Lib "user32" (ByVal hwnd As Long, ByVal hWndInsertAfter As Long, ByVal X As Long, ByVal Y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long)
 Public Const SWP_NOMOVE = &H2                                                   '不更动目前视窗位置
 Public Const SWP_NOSIZE = &H1                                                   '不更动目前视窗大小
 Public Const HWND_TOPMOST = -1                                                  '设定为最上层
@@ -21,14 +21,6 @@ Declare Function GetPrivateProfileInt Lib "kernel32" Alias "GetPrivateProfileInt
 '---------------------
 Public Declare Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, lParam As Any) As Long
 Public Const LB_ITEMFROMPOINT = &H1A9
-
-Public Type DocumentsData
-    PictureData As Picture                                                      '存储图片
-    frmPictureCopy As New frmPicture                                            '多开窗体
-    frmPictureSaved As Boolean                                                  '图片是否保存
-    frmPictureName As String                                                    '每个窗体内图片名称
-    PicZoom As Integer                                                          '缩放
-End Type
 
 Public SysMajor As Long, SysMinor As Long, SysBuild As Long                     '保存系统版本信息
 Public AutoSendToClipBoardBoo As Boolean                                        '热键截图后直接将图片复制到剪贴板
@@ -50,22 +42,13 @@ Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 Public PicFilesCount As Long                                                    '文件计数，不减只加
 Public SnapWhenTrayLng As Long, SnapWhenTrayBoo As Boolean                      '托盘时截图数
 Public frmPicNum As Integer                                                     '窗体编号
-Public DocData() As DocumentsData
+Public PictureForms As New Collection
 
 Public Sub UnloadfrmPic(ByVal FrmNum As Integer)
     Dim i As Integer, n As Integer                                              '计数
-    For i = FrmNum To frmPicNum - 1                                             '如关闭了2，共4个窗口，则3号变成2号，四号变成三号
-        Set DocData(i).frmPictureCopy = DocData(i + 1).frmPictureCopy
-        DocData(i).frmPictureCopy.labfrmi.Caption = i                           '将更改后的序号传递给窗口
-        DocData(i).frmPictureSaved = DocData(i + 1).frmPictureSaved             '是否保存图片 信息
-        DocData(i).PicZoom = DocData(i + 1).PicZoom                             '是否保存图片 信息
-        Set DocData(i).PictureData = DocData(i + 1).PictureData
-        DocData(i).frmPictureName = DocData(i + 1).frmPictureName
-    Next
     frmPicNum = frmPicNum - 1
-    If frmPicNum > -1 Then
-        ReDim Preserve DocData(0 To frmPicNum) As DocumentsData
-    End If
+    'Unload PictureForms.Item(1 + FrmNum)
+    PictureForms.Remove (1 + FrmNum)
     n = frmMain.listSnapPic.ListIndex
     frmMain.listSnapPic.RemoveItem (n)                                          '先移除此条
     If n > 0 Then frmMain.listSnapPic.Selected(n - 1) = True                    '再选中上一条，防止当在最后一条时无法自动选中下一条
@@ -73,79 +56,55 @@ Public Sub UnloadfrmPic(ByVal FrmNum As Integer)
     TrayTip frmMain, App.Title & " - " & LoadResString(10809) & frmPicNum + 1 & LoadResString(10810) '共   张截图        '刷新托盘提示文本
 End Sub
 
-Public Function SaveFiles(ByVal frm As Form, ByVal FrmNum As Long) As String    '选择保存的文件名(optval=1是，“全部是”保存)
+Public Function GetPicturePath(ByVal frm As Form, ByVal FrmNum As Long) As String '选择保存的文件名(optval=1是，“全部是”保存)
     On Error GoTo Err
     Dim SaveToFileName As String, EXEFiles() As Byte
     SaveToFileName = GetDialog("save", "保存到文件", Format(Now, "yyyy-MM-dd_hh-mm-ss") & ".bmp", frm.hwnd)
     If SaveToFileName = "" Then
-        SaveFiles = ""
+        GetPicturePath = ""
     Else
-        SaveFiles = Split(SaveToFileName, "\")(UBound(Split(SaveToFileName, "\")))
+        GetPicturePath = Split(SaveToFileName, "\")(UBound(Split(SaveToFileName, "\")))
     End If
     Exit Function
 Err:
-    If (Err.Description = "文件未找到： gdiplus" And Err.Number = 53) Or (Err.Description = "File not found: gdiplus" And Err.Number = 53) _
-        Or (Err.Description = "文件未找到： gdiplus" And Err.Number = 48) Or (Err.Description = "File not found: gdiplus" And Err.Number = 48) Then
-        EXEFiles = LoadResData(101, "CUSTOM")
-        '以二进制方式写（生成）到当前目录
-        Open App.path & "\GdiPlus.dll" For Binary As #1
-        Put #1, , EXEFiles
-        Close #1
-        
-        SaveFiles = Split(SaveToFileName, "\")(UBound(Split(SaveToFileName, "\")))
-    Else
-        MsgBox "错误！" & vbCrLf & "错误代码：" & Err.Number & vbCrLf & "错误描述：" & Err.Description, vbCritical + vbOKOnly
-    End If
+    MsgBox "错误！GetPicturePath" & vbCrLf & "错误代码：" & Err.Number & vbCrLf & "错误描述：" & Err.Description, vbCritical + vbOKOnly
 End Function
 
-Public Sub SaveFiles2(ByVal Str As String, ByVal FrmNum As Long, Optional ByVal OptVal = 0) '保存文件(optval=1是，“全部是”保存)
+Public Function SavePictures(ByVal Str As String, ByVal FrmNum As Long, Optional ByVal OptVal = 0) As Integer '保存文件(optval=1是，“全部是”保存)
     On Error GoTo Err
-nxt:
-    Dim SelectedInt As Integer, EXEFiles() As Byte
-    If Str = "" Then
-        Exit Sub
-    Else
+    SavePictures = 0
+    Dim EXEFiles() As Byte
+    If Str <> "" Then
         If OptVal = 0 Then
-            DocData(FrmNum).frmPictureName = Str
-            DocData(FrmNum).frmPictureCopy.Caption = DocData(CInt(DocData(FrmNum).frmPictureCopy.labfrmi.Caption)).frmPictureName
             If SnapWhenTrayBoo Then
                 '托盘截图自动保存时不需要在此处添加条目，在frmmain显示时会添加
             Else
-                frmMain.listSnapPic.AddItem DocData(FrmNum).frmPictureName, frmMain.listSnapPic.ListIndex
-                SelectedInt = frmMain.listSnapPic.ListIndex - 1
-                frmMain.listSnapPic.RemoveItem frmMain.listSnapPic.ListIndex
-                frmMain.listSnapPic.Selected(SelectedInt) = True
+                PictureForms.Item(1 + FrmNum).PictureName = Str
+                frmMain.listSnapPic.List(frmMain.listSnapPic.ListIndex) = Str
             End If
-            DocData(FrmNum).frmPictureSaved = True
+            PictureForms.Item(1 + FrmNum).PictureSaved = True
             
-            Call SaveStdPicToFile(DocData(FrmNum).PictureData, Str, Split(Str, ".")(UBound(Split(Str, "."))))
+            Call SaveStdPicToFile(PictureForms.Item(1 + FrmNum).PictureData, Str, Split(Str, ".")(UBound(Split(Str, "."))))
+            
+            SavePictures = 1
         ElseIf OptVal = 1 Then
             Dim i As Long, NewName As String
             For i = 0 To frmPicNum
                 Randomize                                                       '1000-99999随机数
                 ShowProgressBar Format((i + 1) / (frmPicNum + 1), "0.000")      '进度条
-                If DocData(i).frmPictureSaved = False Then
+                If PictureForms.Item(1 + i).PictureSaved = False Then
                     NewName = Mid(Str, 1, InStrRev(Str, ".") - 1) & (i + 1) & "_" & (1000 + Int(Rnd * 98999)) & "." & Split(Str, ".")(UBound(Split(Str, ".")))
-                    Call SaveStdPicToFile(DocData(i).PictureData, NewName, Split(NewName, ".")(UBound(Split(NewName, "."))))
-                    DocData(i).frmPictureSaved = True
+                    Call SaveStdPicToFile(PictureForms.Item(1 + i).PictureData, NewName, Split(NewName, ".")(UBound(Split(NewName, "."))))
+                    PictureForms.Item(1 + i).PictureSaved = True
                 End If
             Next i
         End If
     End If
-    Exit Sub
+    Exit Function
 Err:
-    If (Err.Description = "文件未找到： gdiplus" And Err.Number = 53) Or (Err.Description = "File not found: gdiplus" And Err.Number = 53) _
-        Or (Err.Description = "文件未找到： gdiplus" And Err.Number = 48) Or (Err.Description = "File not found: gdiplus" And Err.Number = 48) Then
-        EXEFiles = LoadResData(101, "CUSTOM")
-        '以二进制方式写（生成）到当前目录
-        Open App.path & "\GdiPlus.dll" For Binary As #1
-        Put #1, , EXEFiles
-        Close #1
-        GoTo nxt
-    Else
-        MsgBox "错误！" & vbCrLf & "错误代码：" & Err.Number & vbCrLf & "错误描述：" & Err.Description, vbCritical + vbOKOnly
-    End If
-End Sub
+    MsgBox "错误！SavePictures" & vbCrLf & "错误代码：" & Err.Number & vbCrLf & "错误描述：" & Err.Description, vbCritical + vbOKOnly
+    SavePictures = 0
+End Function
 
 Public Sub AutoSaveSnapSub(ByVal Value As Single, ByVal Num As Long)            '自动保存图片    0为全屏，1为活动，2为热键，3为光标，4为任何窗口
     Dim FilesName As String, IDStr As String
@@ -165,9 +124,9 @@ Public Sub AutoSaveSnapSub(ByVal Value As Single, ByVal Num As Long)            
     FilesName = IDStr & " - " & Format(Now, "yyyy-MM-dd-hh-mm-ss") & (frmPicNum + 1) & "_" & Int(Rnd * 98999) + 1000 'Int(Rnd * n) + m,生成m到n的随机数其中,n,m为integer类型
     '文件夹不存在  '在应用程序根目下，创建文件夹
     If Dir(AutoSaveSnapPathStr, vbDirectory) = "" Then MkDir AutoSaveSnapPathStr
-    SaveFiles2 AutoSaveSnapPathStr & "\" & FilesName & Replace(AutoSaveSnapFormatStr, "*", ""), frmPicNum, 0
-    
-    'frmPictureSaved(Num) = True
+    SavePictures AutoSaveSnapPathStr & "\" & FilesName & Replace(AutoSaveSnapFormatStr, "*", ""), frmPicNum, 0
+    PictureForms.Item(1 + frmPicNum).PictureName = AutoSaveSnapPathStr & "\" & FilesName & Replace(AutoSaveSnapFormatStr, "*", "")
+    PictureForms.Item(1 + frmPicNum).Caption = PictureForms.Item(1 + frmPicNum).PictureName
 End Sub
 
 Public Sub ShowProgressBar(ByVal Value As Single)                               '进度条        0-1的小数

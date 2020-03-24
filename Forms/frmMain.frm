@@ -146,14 +146,6 @@ Begin VB.MDIForm frmMain
       TabStop         =   0   'False
       Top             =   0
       Width           =   705
-      Begin VB.CommandButton cmdMainTran 
-         Height          =   375
-         Left            =   120
-         TabIndex        =   9
-         Top             =   3000
-         Visible         =   0   'False
-         Width           =   375
-      End
       Begin VB.Timer timerHotKey 
          Enabled         =   0   'False
          Interval        =   100
@@ -422,8 +414,6 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
-Dim ScrWidth As Integer
-Dim ScrHeight As Integer, msgboxed As Boolean
 
 Private Sub chkSoundPlay_Click()
     If chkSoundPlay.Value = 1 Then
@@ -439,34 +429,30 @@ End Sub
 Private Sub cmbZoom_Click()
     On Error Resume Next
     Dim Boo As Boolean
-    Boo = DocData(CLng(ActiveForm.labfrmi.Caption)).frmPictureSaved             '记录放大前是否保存
+    Boo = ActiveForm.PictureSaved                                               '记录放大前是否保存
     If frmPicNum = -1 Then Exit Sub
     If ActiveForm.picScreenShot.Picture = 0 Then Exit Sub
     Dim X1 As Long, Y1 As Long, X0 As Integer, Y0 As Integer, OldStretchBltMode As Integer
-    Set ActiveForm.picScreenShot.Picture = DocData(CLng(ActiveForm.labfrmi.Caption)).PictureData
+    Set ActiveForm.picScreenShot.Picture = ActiveForm.PictureData
     X0 = ActiveForm.picScreenShot.Width / Screen.TwipsPerPixelX
     Y0 = ActiveForm.picScreenShot.Height / Screen.TwipsPerPixelY
     X1 = Val(cmbZoom.List(cmbZoom.ListIndex)) * 0.01 * ActiveForm.picScreenShot.Width
     Y1 = Val(cmbZoom.List(cmbZoom.ListIndex)) * 0.01 * ActiveForm.picScreenShot.Height
     ActiveForm.picScreenShot.Width = X1
     ActiveForm.picScreenShot.Height = Y1
-    Set Picture1.Picture = DocData(CLng(ActiveForm.labfrmi.Caption)).PictureData
+    Set Picture1.Picture = ActiveForm.PictureData
     OldStretchBltMode = SetStretchBltMode(ActiveForm.picScreenShot.hDC, COLORONCOLOR) '设置新的模式
     StretchBlt ActiveForm.picScreenShot.hDC, 0, 0, X1 / Screen.TwipsPerPixelX, Y1 / Screen.TwipsPerPixelY, Picture1.hDC, 0, 0, X0, Y0, vbSrcCopy
     SetStretchBltMode ActiveForm.picScreenShot.hDC, OldStretchBltMode           '改回原来的模式
-    'ActiveForm.picScreenShot.PaintPicture DocData(CLng(ActiveForm.labfrmi.Caption)).PictureData _
+    'ActiveForm.picScreenShot.PaintPicture DocData(ActiveForm.FormNum).PictureData _
     , 0, 0, X1, Y1
     ActiveForm.cmdTransferVHScroll.Value = True
-    DocData(CLng(ActiveForm.labfrmi.Caption)).PicZoom = Val(cmbZoom.List(cmbZoom.ListIndex))
-    DocData(CLng(ActiveForm.labfrmi.Caption)).frmPictureSaved = Boo             '恢复放大前是否保存数据
+    ActiveForm.PicZoom = Val(cmbZoom.List(cmbZoom.ListIndex))
+    ActiveForm.PictureSaved = Boo                                               '恢复放大前是否保存数据
 End Sub
 
 Private Sub cmbZoom_Scroll()
     cmbZoom_Click
-End Sub
-
-Private Sub cmdMainTran_Click()
-    mnuCloseAllFilesUnsaved_Click
 End Sub
 
 Private Sub imgActiveWin_Click()
@@ -542,12 +528,11 @@ Private Sub labPicQuantity_DblClick()
 End Sub
 
 Private Sub listSnapPic_Click()
-    On Error Resume Next
-    
     If SnapWhenTrayBoo = False Then
-        DocData(listSnapPic.ListIndex).frmPictureCopy.Caption = DocData(listSnapPic.ListIndex).frmPictureName
-        If DocData(listSnapPic.ListIndex).frmPictureCopy.Visible = False Then DocData(listSnapPic.ListIndex).frmPictureCopy.Show
-        DocData(listSnapPic.ListIndex).frmPictureCopy.SetFocus
+        PictureForms.Item(1 + listSnapPic.ListIndex).Caption = PictureForms.Item(1 + listSnapPic.ListIndex).PictureName
+        If PictureForms.Item(1 + listSnapPic.ListIndex).Visible = False Then PictureForms.Item(1 + listSnapPic.ListIndex).Show
+        PictureForms.Item(1 + listSnapPic.ListIndex).SetFocus
+        PictureForms.Item(1 + listSnapPic.ListIndex).FormNum = listSnapPic.ListIndex
     End If
 End Sub
 
@@ -574,6 +559,13 @@ Private Sub MDIForm_Initialize()
 End Sub
 
 Private Sub MDIForm_Load()
+    If Dir(App.path & "\GdiPlus.dll") = "" Then
+        '以二进制方式写（生成）到当前目录
+        Open App.path & "\GdiPlus.dll" For Binary As #1
+        Put #1, , LoadResData(101, "CUSTOM")
+        Close #1
+    End If
+    
     frmTray.Show
     
     Select Case Command
@@ -581,23 +573,10 @@ Private Sub MDIForm_Load()
         Me.Visible = False
     End Select
     
-    '---------------------------------------读取语言
-    LoadLanguages "frmMain"
-    '    Select Case GetSystemDefaultLangID
-    '    Case &H804                                                                  '简体中文
-    '        LoadLanguages 1
-    '    Case &H404                                                                  '繁体中文
-    '        LoadLanguages 2
-    '    Case &H409                                                                  '英文
-    '        LoadLanguages 3
-    '    End Select
-    
-    '---------------------------------------
+    LoadLanguages "frmMain"                                                     '读取语言
     
     '——————————————————读取ini
-    Dim lngini As Long
     Dim retstrini As String
-    
     If Dir(App.path & "\ScreenSnapConfig.ini") = "" Then
         WritePrivateProfileString "Sound", "ChooseSoundPlay", "DAZIJI", App.path & "\ScreenSnapConfig.ini"
         WritePrivateProfileString "Sound", "SoundPlay", "1", App.path & "\ScreenSnapConfig.ini"
@@ -617,7 +596,6 @@ Private Sub MDIForm_Load()
         WritePrivateProfileString "Save", "AutoSaveSnapWindowCtrl", "0", App.path & "\ScreenSnapConfig.ini"
         WritePrivateProfileString "Config", "HideWinCaptureFullScreen", "0", App.path & "\ScreenSnapConfig.ini"
         WritePrivateProfileString "Config", "HideWinCaptureActiveWindow", "0", App.path & "\ScreenSnapConfig.ini"
-        'WritePrivateProfileString "Config", "HideWinCaptureHotKey", "0", App.path & "\ScreenSnapConfig.ini"
         WritePrivateProfileString "Config", "HideWinCaptureCursor", "0", App.path & "\ScreenSnapConfig.ini"
         WritePrivateProfileString "Config", "HideWinCaptureWindowCtrl", "0", App.path & "\ScreenSnapConfig.ini"
         WritePrivateProfileString "Picture", "AutoSaveSnapPath", App.path, App.path & "\ScreenSnapConfig.ini"
@@ -628,31 +606,21 @@ Private Sub MDIForm_Load()
     End If
     
     '读取注册热键方式
-    lngini = GetPrivateProfileInt("HotKey", "DeclareHotKeyWay", 1, App.path & "\ScreenSnapConfig.ini")
-    DeclareHotKeyWayInt = lngini
+    DeclareHotKeyWayInt = GetPrivateProfileInt("HotKey", "DeclareHotKeyWay", 1, App.path & "\ScreenSnapConfig.ini")
     '读取热键
-    lngini = GetPrivateProfileInt("HotKey", "HotKeyCode", 122, App.path & "\ScreenSnapConfig.ini")
-    HotKeyCodeInt = lngini
+    HotKeyCodeInt = GetPrivateProfileInt("HotKey", "HotKeyCode", 122, App.path & "\ScreenSnapConfig.ini")
     '读取关闭主窗口时直接退出程序还是最小化到托盘
-    lngini = GetPrivateProfileInt("Config", "EndOrMin", 0, App.path & "\ScreenSnapConfig.ini")
-    EndOrMinBoo = Abs(lngini)
+    EndOrMinBoo = Abs(GetPrivateProfileInt("Config", "EndOrMin", 0, App.path & "\ScreenSnapConfig.ini"))
     '读取活动窗口截图方式
-    lngini = GetPrivateProfileInt("Config", "ActiveWindowSnapMode", -1, App.path & "\ScreenSnapConfig.ini")
-    If lngini = -1 Then
-        ActiveWindowSnapMode = 1
-        
-        lngini = WritePrivateProfileString("Config", "ActiveWindowSnapMode", "1", App.path & "\ScreenSnapConfig.ini")
-    Else
-        ActiveWindowSnapMode = lngini
-    End If
+    ActiveWindowSnapMode = GetPrivateProfileInt("Config", "ActiveWindowSnapMode", 1, App.path & "\ScreenSnapConfig.ini")
     '读取是否截取光标
-    retstrini = String(260, 0)
-    lngini = GetPrivateProfileString("Config", "IncludeCursor", "未找到数据", retstrini, 245, App.path & "\ScreenSnapConfig.ini")
+    retstrini = String(255, 0)
+    GetPrivateProfileString "Config", "IncludeCursor", "NoData", retstrini, 256, App.path & "\ScreenSnapConfig.ini"
     retstrini = Replace(retstrini, Chr(0), "")
-    If retstrini = "未找到数据" Then
+    If retstrini = "NoData" Then
         IncludeCursorBoo = False
         
-        lngini = WritePrivateProfileString("Config", "IncludeCursor", "False", App.path & "\ScreenSnapConfig.ini")
+        WritePrivateProfileString "Config", "IncludeCursor", "False", App.path & "\ScreenSnapConfig.ini"
     Else
         If retstrini = "True" Then
             IncludeCursorBoo = True
@@ -661,13 +629,13 @@ Private Sub MDIForm_Load()
         End If
     End If
     '读取热键截图后是否直接将图片复制到剪贴板
-    retstrini = String(260, 0)
-    lngini = GetPrivateProfileString("Config", "AutoSendToClipBoard", "未找到数据", retstrini, 245, App.path & "\ScreenSnapConfig.ini")
+    retstrini = String(255, 0)
+    GetPrivateProfileString "Config", "AutoSendToClipBoard", "NoData", retstrini, 256, App.path & "\ScreenSnapConfig.ini"
     retstrini = Replace(retstrini, Chr(0), "")
-    If retstrini = "未找到数据" Then
+    If retstrini = "NoData" Then
         AutoSendToClipBoardBoo = False
         
-        lngini = WritePrivateProfileString("Config", "AutoSendToClipBoard", "False", App.path & "\ScreenSnapConfig.ini")
+        WritePrivateProfileString "Config", "AutoSendToClipBoard", "False", App.path & "\ScreenSnapConfig.ini"
     Else
         If retstrini = "True" Then
             AutoSendToClipBoardBoo = True
@@ -676,103 +644,71 @@ Private Sub MDIForm_Load()
         End If
     End If
     '读取自动保存截图格式
-    retstrini = String(260, 0)
-    lngini = GetPrivateProfileString("Picture", "AutoSaveSnapFormat", "未找到数据", retstrini, 245, App.path & "\ScreenSnapConfig.ini")
+    retstrini = String(255, 0)
+    GetPrivateProfileString "Picture", "AutoSaveSnapFormat", "NoData", retstrini, 256, App.path & "\ScreenSnapConfig.ini"
     retstrini = Replace(retstrini, Chr(0), "")
-    If retstrini = "未找到数据" Then
+    If retstrini = "NoData" Then
         AutoSaveSnapFormatStr = "*.bmp"
         
-        lngini = WritePrivateProfileString("Picture", "AutoSaveSnapFormat", "*.bmp", App.path & "\ScreenSnapConfig.ini")
+        WritePrivateProfileString "Picture", "AutoSaveSnapFormat", "*.bmp", App.path & "\ScreenSnapConfig.ini"
     Else
         AutoSaveSnapFormatStr = retstrini
     End If
     '读取自动保存截图目录
-    retstrini = String(260, 0)
-    lngini = GetPrivateProfileString("Picture", "AutoSaveSnapPath", "未找到数据", retstrini, 245, App.path & "\ScreenSnapConfig.ini")
+    retstrini = String(255, 0)
+    GetPrivateProfileString "Picture", "AutoSaveSnapPath", "NoData", retstrini, 256, App.path & "\ScreenSnapConfig.ini"
     retstrini = Replace(retstrini, Chr(0), "")
-    If retstrini = "未找到数据" Then
+    If retstrini = "NoData" Then
         AutoSaveSnapPathStr = App.path
         
-        lngini = WritePrivateProfileString("Picture", "AutoSaveSnapPath", App.path, App.path & "\ScreenSnapConfig.ini")
+        WritePrivateProfileString "Picture", "AutoSaveSnapPath", App.path, App.path & "\ScreenSnapConfig.ini"
     Else
         AutoSaveSnapPathStr = retstrini
     End If
     '读取全屏截图时是否隐藏窗口
-    lngini = GetPrivateProfileInt("Config", "HideWinCaptureFullScreen", 0, App.path & "\ScreenSnapConfig.ini")
-    HideWinCaptureInt(0) = lngini
+    HideWinCaptureInt(0) = GetPrivateProfileInt("Config", "HideWinCaptureFullScreen", 0, App.path & "\ScreenSnapConfig.ini")
     '读取活动窗口截图时是否隐藏窗口
-    lngini = GetPrivateProfileInt("Config", "HideWinCaptureActiveWindow", 0, App.path & "\ScreenSnapConfig.ini")
-    HideWinCaptureInt(1) = lngini
-    '    '读取热键截图时是否隐藏窗口
-    '    lngini = GetPrivateProfileInt("Config", "HideWinCaptureHotKey", 0, App.path & "\ScreenSnapConfig.ini")
-    '    HideWinCaptureInt(2) = lngini
+    HideWinCaptureInt(1) = GetPrivateProfileInt("Config", "HideWinCaptureActiveWindow", 0, App.path & "\ScreenSnapConfig.ini")
     '读取截取鼠标时是否隐藏窗口
-    lngini = GetPrivateProfileInt("Config", "HideWinCaptureCursor", 0, App.path & "\ScreenSnapConfig.ini")
-    HideWinCaptureInt(3) = lngini
+    HideWinCaptureInt(3) = GetPrivateProfileInt("Config", "HideWinCaptureCursor", 0, App.path & "\ScreenSnapConfig.ini")
     '读取截取任意窗口时是否隐藏窗口
-    lngini = GetPrivateProfileInt("Config", "HideWinCaptureWindowCtrl", 0, App.path & "\ScreenSnapConfig.ini")
-    HideWinCaptureInt(4) = lngini
+    HideWinCaptureInt(4) = GetPrivateProfileInt("Config", "HideWinCaptureWindowCtrl", 0, App.path & "\ScreenSnapConfig.ini")
     '读取全屏截图后是否保存
-    lngini = GetPrivateProfileInt("Save", "AutoSaveSnapFullScreen", 0, App.path & "\ScreenSnapConfig.ini")
-    AutoSaveSnapInt(0) = lngini
+    AutoSaveSnapInt(0) = GetPrivateProfileInt("Save", "AutoSaveSnapFullScreen", 0, App.path & "\ScreenSnapConfig.ini")
     '读取活动窗口截图后是否保存
-    lngini = GetPrivateProfileInt("Save", "AutoSaveSnapActiveWindow", 0, App.path & "\ScreenSnapConfig.ini")
-    AutoSaveSnapInt(1) = lngini
+    AutoSaveSnapInt(1) = GetPrivateProfileInt("Save", "AutoSaveSnapActiveWindow", 0, App.path & "\ScreenSnapConfig.ini")
     '读取热键截图后是否保存
-    lngini = GetPrivateProfileInt("Save", "AutoSaveSnapHotKey", 0, App.path & "\ScreenSnapConfig.ini")
-    AutoSaveSnapInt(2) = lngini
+    AutoSaveSnapInt(2) = GetPrivateProfileInt("Save", "AutoSaveSnapHotKey", 0, App.path & "\ScreenSnapConfig.ini")
     '读取截取光标后是否保存
-    lngini = GetPrivateProfileInt("Save", "AutoSaveSnapCursor", 0, App.path & "\ScreenSnapConfig.ini")
-    AutoSaveSnapInt(3) = lngini
+    AutoSaveSnapInt(3) = GetPrivateProfileInt("Save", "AutoSaveSnapCursor", 0, App.path & "\ScreenSnapConfig.ini")
     '读取截取任意窗口后是否保存
-    lngini = GetPrivateProfileInt("Save", "AutoSaveSnapWindowCtrl", 0, App.path & "\ScreenSnapConfig.ini")
-    AutoSaveSnapInt(4) = lngini
+    AutoSaveSnapInt(4) = GetPrivateProfileInt("Save", "AutoSaveSnapWindowCtrl", 0, App.path & "\ScreenSnapConfig.ini")
     '读取播放提示音值
-    lngini = GetPrivateProfileInt("Sound", "SoundPlay", 3, App.path & "\ScreenSnapConfig.ini")
-    If lngini = 3 Then
-        SoundPlayInt = 1
-        chkSoundPlay.Value = SoundPlayInt
-        
-        lngini = WritePrivateProfileString("Sound", "SoundPlay", "1", App.path & "\ScreenSnapConfig.ini")
-    Else
-        SoundPlayInt = lngini
-        chkSoundPlay.Value = SoundPlayInt
-    End If
+    SoundPlayInt = GetPrivateProfileInt("Sound", "SoundPlay", 1, App.path & "\ScreenSnapConfig.ini")
+    chkSoundPlay.Value = SoundPlayInt
     '读取选择的提示音
-    retstrini = String(260, 0)
-    lngini = GetPrivateProfileString("Sound", "ChooseSoundPlay", "未找到数据", retstrini, 245, App.path & "\ScreenSnapConfig.ini")
+    retstrini = String(255, 0)
+    GetPrivateProfileString "Sound", "ChooseSoundPlay", "NoData", retstrini, 256, App.path & "\ScreenSnapConfig.ini"
     retstrini = Replace(retstrini, Chr(0), "")
-    If retstrini = "未找到数据" Then
+    If retstrini = "NoData" Then
         ChooseSoundPlayStr = "DAZIJI"
         
-        lngini = WritePrivateProfileString("Sound", "ChooseSoundPlay", "DAZIJI", App.path & "\ScreenSnapConfig.ini")
+        WritePrivateProfileString "Sound", "ChooseSoundPlay", "DAZIJI", App.path & "\ScreenSnapConfig.ini"
     Else
         ChooseSoundPlayStr = retstrini
     End If
     '读取全屏截图延时值
-    lngini = GetPrivateProfileInt("Config", "DelayTimeFullScreen", 0, App.path & "\ScreenSnapConfig.ini")
-    DelayTimeInt(0) = lngini
+    DelayTimeInt(0) = GetPrivateProfileInt("Config", "DelayTimeFullScreen", 0, App.path & "\ScreenSnapConfig.ini")
     '读取活动窗口截图延时值
-    lngini = GetPrivateProfileInt("Config", "DelayTimeActiveWindow", 3, App.path & "\ScreenSnapConfig.ini")
-    DelayTimeInt(1) = lngini
+    DelayTimeInt(1) = GetPrivateProfileInt("Config", "DelayTimeActiveWindow", 3, App.path & "\ScreenSnapConfig.ini")
     '读取热键截图延时值
-    lngini = GetPrivateProfileInt("Config", "DelayTimeHotKey", 0, App.path & "\ScreenSnapConfig.ini")
-    DelayTimeInt(2) = lngini
+    DelayTimeInt(2) = GetPrivateProfileInt("Config", "DelayTimeHotKey", 0, App.path & "\ScreenSnapConfig.ini")
     '读取捕获光标延时值
-    lngini = GetPrivateProfileInt("Config", "DelayTimeCursor", 1, App.path & "\ScreenSnapConfig.ini")
-    DelayTimeInt(3) = lngini
+    DelayTimeInt(3) = GetPrivateProfileInt("Config", "DelayTimeCursor", 1, App.path & "\ScreenSnapConfig.ini")
     '读取捕获任意窗口延时值
-    lngini = GetPrivateProfileInt("Config", "DelayTimeWindowCtrl", 0, App.path & "\ScreenSnapConfig.ini")
-    DelayTimeInt(4) = lngini
+    DelayTimeInt(4) = GetPrivateProfileInt("Config", "DelayTimeWindowCtrl", 0, App.path & "\ScreenSnapConfig.ini")
     '读取保存JPG图片压缩品质值
-    lngini = GetPrivateProfileInt("Picture", "SaveJpgQuality", -1, App.path & "\ScreenSnapConfig.ini")
-    If lngini = -1 Then
-        SetJpgQuality = 80
-        
-        lngini = WritePrivateProfileString("Picture", "SaveJpgQuality", "80", App.path & "\ScreenSnapConfig.ini")
-    Else
-        SetJpgQuality = lngini
-    End If
+    SetJpgQuality = GetPrivateProfileInt("Picture", "SaveJpgQuality", 80, App.path & "\ScreenSnapConfig.ini")
     '——————————————————
     
     frmPicNum = -1                                                              '无文档
@@ -787,23 +723,10 @@ Private Sub MDIForm_Load()
     With cmbZoom
         .AddItem "5%"
         .AddItem "10%"
-        .AddItem "25%"
-        .AddItem "50%"
-        .AddItem "75%"
-        .AddItem "90%"
-        .AddItem "100%"
-        .AddItem "150%"
-        .AddItem "200%"
-        .AddItem "250%"
-        .AddItem "300%"
-        .AddItem "350%"
-        .AddItem "400%"
-        .AddItem "450%"
-        .AddItem "500%"
-        .AddItem "550%"
-        .AddItem "600%"
-        .AddItem "650%"
-        .AddItem "700%"
+        Dim i As Integer
+        For i = 25 To 700 Step 25
+            .AddItem i & "%"
+        Next i
     End With
     
     cmbZoom.Text = "100%"
@@ -859,13 +782,11 @@ Private Sub MDIForm_QueryUnload(Cancel As Integer, UnloadMode As Integer)
         
         '先把子窗体关闭，因为vb6默认的顺序是从0到n，这与此算法顺序刚好相反，因此需要先手动关闭子窗体，再触发主窗体的关闭事件
         For i = frmPicNum To 0 Step -1
-            Unload DocData(i).frmPictureCopy
+            Unload PictureForms.Item(1 + i)
             If NewMsgBoxInt = -1 Then Cancel = 1: NewMsgBoxInt = 0: Exit For
             If NewMsgBoxInt = 4 Then NewMsgBoxInt = 0: Exit For                 '在子窗体里自己全关闭完了，不需要再循环
+            'PictureForms.Remove (1 + i)                                         '语句顺序要在下面
         Next
-        
-        '        If NewMsgBoxInt = 4 Then NewMsgBoxInt = 0: Exit Sub                     '点全部否时通过菜单栏里的 关闭所有文件不保存 来退出
-        '        If NewMsgBoxInt = -1 Then Cancel = True: NewMsgBoxInt = 0: Exit Sub     '点取消时停止退出
         If isUnloadWindows Then TrayRemoveIcon: UnRegHotkeySub: End
     Else
         Cancel = True                                                           '取消退出
@@ -911,23 +832,7 @@ Private Sub mnuClose_Click()
 End Sub
 
 Private Sub mnuCloseAllFilesUnsaved_Click()
-    If frmPicNum = -1 Then Exit Sub
-    If NewMsgBoxInt = 4 Then GoTo pos
-    
-    '再次确认此操作将 全部关闭且不保存未保存的文档,是否继续?
-    If MsgBox(LoadResString(10808), vbExclamation + vbYesNo + vbDefaultButton2) = vbYes Then
-pos:
-        Dim i As Integer
-        listSnapPic.Selected(frmPicNum) = True                                  '在子窗体发生关闭时间前选中列表框最后一项，确保从最后一个文档依次关闭
-        CloseAllFilesUnsavedBoo = True
-        For i = frmPicNum To 0 Step -1
-            Unload DocData(i).frmPictureCopy
-        Next
-        listSnapPic.Clear
-        Erase DocData
-        
-        CloseAllFilesUnsavedBoo = False
-    End If
+    CloseAllFilesUnsaved
 End Sub
 
 Private Sub mnuCopy_Click()
@@ -950,32 +855,28 @@ End Sub
 Private Sub mnufrmPicCopy_Click()
     On Error Resume Next
     Clipboard.Clear
-    Clipboard.SetData DocData(listSnapPic.ListIndex).PictureData
+    Clipboard.SetData PictureForms.Item(1 + listSnapPic.ListIndex).PictureData
 End Sub
 
 Private Sub mnufrmPicPaste_Click()
-    Dim SelectedInt As Long
     If frmPicNum = -1 Or listSnapPic.ListIndex < 0 Then Exit Sub
     If Clipboard.GetFormat(2) Or Clipboard.GetFormat(3) Or Clipboard.GetFormat(8) Then
-        If DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureSaved Then       '要在Clipboard.GetData()之前
-            DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureSaved = False
-            DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureName = DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureName & " *"
-            ActiveForm.Caption = DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureName
+        If ActiveForm.PictureSaved Then                                         '要在Clipboard.GetData()之前
+            ActiveForm.PictureSaved = False
+            ActiveForm.PictureName = ActiveForm.PictureName & " *"
+            ActiveForm.Caption = ActiveForm.PictureName
         End If
         
-        ActiveForm.picScreenShot.Picture = LoadPicture()
-        Set Me.ActiveForm.picScreenShot.Picture = Clipboard.GetData()           '这里frmPictureSaved改变
+        Set ActiveForm.picScreenShot.Picture = LoadPicture()
+        Set Me.ActiveForm.picScreenShot.Picture = Clipboard.GetData()           '这里PictureSaved改变
         ActiveForm.picScreenShot.Picture = ActiveForm.picScreenShot.Image
-        Set DocData(frmPicNum).PictureData = DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture
+        Set ActiveForm.PictureData = ActiveForm.picScreenShot.Picture
         ActiveForm.cmdTransferVHScroll.Value = True
         
         'listbox加“*”
-        listSnapPic.AddItem DocData(CInt(ActiveForm.labfrmi.Caption)).frmPictureName, listSnapPic.ListIndex
-        SelectedInt = listSnapPic.ListIndex - 1
-        listSnapPic.RemoveItem listSnapPic.ListIndex
-        listSnapPic.Selected(SelectedInt) = True
+        listSnapPic.List(listSnapPic.ListIndex) = ActiveForm.PictureName
         
-        DocData(CInt(ActiveForm.labfrmi.Caption)).PicZoom = 100
+        ActiveForm.PicZoom = 100
         cmbZoom.Text = "100%"
     End If
 End Sub
@@ -983,14 +884,16 @@ End Sub
 Public Sub mnuNew_Click()
     frmPicNum = frmPicNum + 1
     PicFilesCount = PicFilesCount + 1
-    ReDim Preserve DocData(0 To frmPicNum) As DocumentsData
-    DocData(frmPicNum).PicZoom = 100
-    DocData(frmPicNum).frmPictureCopy.Show
-    DocData(frmPicNum).frmPictureName = LoadResString(10705) & PicFilesCount
-    DocData(frmPicNum).frmPictureCopy.Caption = DocData(frmPicNum).frmPictureName
-    Set DocData(frmPicNum).PictureData = DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture
     
-    listSnapPic.AddItem DocData(frmPicNum).frmPictureName
+    Dim frmPicture As New frmPicture
+    frmPicture.PicZoom = 100
+    frmPicture.PictureName = LoadResString(10705) & PicFilesCount
+    frmPicture.Caption = frmPicture.PictureName
+    Set frmPicture.PictureData = frmPicture.picScreenShot.Picture
+    PictureForms.Add frmPicture
+    frmPicture.Show
+    
+    listSnapPic.AddItem frmPicture.PictureName
     listSnapPic.Selected(frmPicNum) = True
     
     TrayTip Me, App.Title & " - " & LoadResString(10809) & frmPicNum + 1 & LoadResString(10810) '共   张截图
@@ -1009,8 +912,12 @@ End Sub
 Private Sub mnuSave_Click()
     If frmPicNum = -1 Then Exit Sub                                             '没有图片
     Dim Str As String
-    Str = SaveFiles(Me, CLng(ActiveForm.labfrmi.Caption))
-    SaveFiles2 Str, CLng(ActiveForm.labfrmi.Caption)
+    Str = GetPicturePath(Me, ActiveForm.FormNum)
+    If SavePictures(Str, ActiveForm.FormNum) = 1 Then
+        ActiveForm.PictureName = Str
+        ActiveForm.Caption = Str
+        listSnapPic.List(listSnapPic.ListIndex) = Str
+    End If
 End Sub
 
 Private Sub mnuScreenSnap_Click()
@@ -1087,23 +994,29 @@ Private Sub timerHotKey_Timer()
         
         PicFilesCount = PicFilesCount + 1
         frmPicNum = frmPicNum + 1
-        ReDim Preserve DocData(0 To frmPicNum) As DocumentsData
-        If ActiveWindowSnapMode = 0 Then                                        '不同的活动窗口截图方法 先截图，再创建文档，
-            Set DocData(frmPicNum).PictureData = CaptureActiveWindow()          '=原始方法
-        ElseIf ActiveWindowSnapMode = 1 Then
-            Set DocData(frmPicNum).PictureData = CaptureActiveWindowB()         '=新方法
-        End If
-        'frmPictureSaved(frmPicNum) = False                                      '文档窗体内有设置
-        DocData(frmPicNum).PicZoom = 100
-        DocData(frmPicNum).frmPictureName = LoadResString(10705) & PicFilesCount & " *"
-        DocData(frmPicNum).frmPictureCopy.Caption = DocData(frmPicNum).frmPictureName
-        DocData(frmPicNum).frmPictureCopy.labfrmi.Caption = frmPicNum
-        Set DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture = DocData(frmPicNum).PictureData
-        Set DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture = DocData(frmPicNum).frmPictureCopy.picScreenShot.Image
-        '——————————————————————画鼠标 在CaptureActiveWindow(B)内操作
-        Set DocData(frmPicNum).PictureData = DocData(frmPicNum).frmPictureCopy.picScreenShot.Picture
         
-        If AutoSendToClipBoardBoo Then Clipboard.Clear: Clipboard.SetData DocData(frmPicNum).PictureData '热键截图后直接将图片复制到剪贴板
+        Dim frmPicture As New frmPicture
+        frmPicture.PicZoom = 100
+        frmPicture.PictureName = LoadResString(10705) & PicFilesCount
+        frmPicture.Caption = frmPicture.PictureName
+        Set frmPicture.PictureData = frmPicture.picScreenShot.Picture
+        PictureForms.Add frmPicture
+        
+        If ActiveWindowSnapMode = 0 Then                                        '不同的活动窗口截图方法 先截图，再创建文档，
+            Set PictureForms.Item(1 + frmPicNum).PictureData = CaptureActiveWindow() '=原始方法
+        ElseIf ActiveWindowSnapMode = 1 Then
+            Set PictureForms.Item(1 + frmPicNum).PictureData = CaptureActiveWindowB() '=新方法
+        End If
+        'PictureSaved(frmPicNum) = False                                      '文档窗体内有设置
+        PictureForms.Item(1 + frmPicNum).PicZoom = 100
+        PictureForms.Item(1 + frmPicNum).PictureName = LoadResString(10705) & PicFilesCount & " *"
+        PictureForms.Item(1 + frmPicNum).Caption = PictureForms.Item(1 + frmPicNum).PictureName
+        Set PictureForms.Item(1 + frmPicNum).picScreenShot.Picture = PictureForms.Item(1 + frmPicNum).PictureData
+        Set PictureForms.Item(1 + frmPicNum).picScreenShot.Picture = PictureForms.Item(1 + frmPicNum).picScreenShot.Image
+        '——————————————————————画鼠标 在CaptureActiveWindow(B)内操作
+        Set PictureForms.Item(1 + frmPicNum).PictureData = PictureForms.Item(1 + frmPicNum).picScreenShot.Picture
+        
+        If AutoSendToClipBoardBoo Then Clipboard.Clear: Clipboard.SetData PictureForms.Item(1 + frmPicNum).PictureData '热键截图后直接将图片复制到剪贴板
         
         If AutoSaveSnapInt(2) = 1 Then AutoSaveSnapSub 2, frmPicNum             '自动保存？
         
@@ -1117,5 +1030,25 @@ Private Sub timerHotKey_Timer()
     timerHotKey.Enabled = False
     Exit Sub
 Err:
-    MsgBox "错误！" & vbCrLf & "错误代码：" & Err.Number & vbCrLf & "错误描述：" & Err.Description, vbCritical + vbOKOnly
+    MsgBox "错误！timerHotKey_Timer" & vbCrLf & "错误代码：" & Err.Number & vbCrLf & "错误描述：" & Err.Description, vbCritical + vbOKOnly
+End Sub
+
+Public Sub CloseAllFilesUnsaved()
+    If frmPicNum = -1 Then Exit Sub
+    If NewMsgBoxInt = 4 Then GoTo pos
+    
+    '再次确认此操作将 全部关闭且不保存未保存的文档,是否继续?
+    If MsgBox(LoadResString(10808), vbExclamation + vbYesNo + vbDefaultButton2) = vbYes Then
+pos:
+        Dim i As Integer
+        listSnapPic.Selected(frmPicNum) = True                                  '在子窗体发生关闭时间前选中列表框最后一项，确保从最后一个文档依次关闭
+        CloseAllFilesUnsavedBoo = True
+        For i = frmPicNum To 0 Step -1
+            Unload PictureForms.Item(1 + i)
+        Next
+        listSnapPic.Clear
+        frmPicNum = -1
+        
+        CloseAllFilesUnsavedBoo = False
+    End If
 End Sub
